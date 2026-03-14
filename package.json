@@ -7,5 +7,9 @@
     "dev:backend": "npm run dev --workspace=backend",
     "build:frontend": "npm run build --workspace=frontend",
     "build:backend": "npm run build --workspace=backend"
+  },
+  "dependencies": {
+    "@types/express": "^4.17.21",
+    "@types/express-serve-static-core": "^4.19.6"
   }
 }
