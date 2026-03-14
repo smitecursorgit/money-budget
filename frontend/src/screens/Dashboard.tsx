@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, Wallet, ChevronRight } from 'lucide-react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { TrendingUp, TrendingDown, Wallet, ChevronRight, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
 import { VoiceButton } from '../components/VoiceButton.tsx';
@@ -16,6 +16,9 @@ const fadeUp = {
   transition: { type: 'spring', stiffness: 260, damping: 24 },
 };
 
+const RETRY_DELAY_MS = 4000;
+const MAX_RETRIES = 3;
+
 export function Dashboard() {
   const { user, categories } = useAppStore();
   const { setTransactions } = useTransactionStore();
@@ -25,8 +28,12 @@ export function Dashboard() {
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>([]);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const errorTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
 
   const showError = useCallback((msg: string) => {
     setError(msg);
@@ -34,28 +41,52 @@ export function Dashboard() {
     errorTimerRef.current = setTimeout(() => setError(null), 5000);
   }, []);
 
-  const loadData = useCallback(async () => {
-    try {
-      const [summaryRes, txRes, remRes] = await Promise.all([
-        statsApi.summary(),
-        transactionsApi.list({ limit: 5 }),
-        remindersApi.upcoming(7),
-      ]);
-      setSummary(summaryRes.data);
-      setRecentTransactions(txRes.data.transactions);
-      setTransactions(txRes.data.transactions, txRes.data.total);
-      setUpcomingReminders(remRes.data.slice(0, 3));
-    } catch {
-      showError('Ошибка загрузки данных');
-    }
+  const fetchData = useCallback(async () => {
+    const [summaryRes, txRes, remRes] = await Promise.all([
+      statsApi.summary(),
+      transactionsApi.list({ limit: 5 }),
+      remindersApi.upcoming(7),
+    ]);
+    setSummary(summaryRes.data);
+    setRecentTransactions(txRes.data.transactions);
+    setTransactions(txRes.data.transactions, txRes.data.total);
+    setUpcomingReminders(remRes.data.slice(0, 3));
   }, [setTransactions]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  const loadData = useCallback(async (isManual = false) => {
+    if (isManual) {
+      setIsLoading(true);
+      setLoadError(false);
+      retryCountRef.current = 0;
+    }
+
+    try {
+      await fetchData();
+      setIsLoading(false);
+      setLoadError(false);
+      retryCountRef.current = 0;
+    } catch {
+      if (retryCountRef.current < MAX_RETRIES) {
+        retryCountRef.current += 1;
+        // Auto-retry silently — handles Render cold start (server waking up)
+        retryTimerRef.current = setTimeout(() => loadData(), RETRY_DELAY_MS);
+      } else {
+        setIsLoading(false);
+        setLoadError(true);
+      }
+    }
+  }, [fetchData]);
+
+  useEffect(() => {
+    loadData();
+    return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+    };
+  }, [loadData]);
 
   const handleVoiceConfirm = async (entry: ParsedEntry) => {
     await saveVoiceEntry(entry, categories);
-    // Reload silently after save — don't show error if refresh fails (entry was already saved)
-    loadData().catch(() => {});
+    fetchData().catch(() => {});
   };
 
   const currency = user?.currency || 'RUB';
@@ -79,14 +110,53 @@ export function Dashboard() {
         </h1>
       </motion.div>
 
-      {error && (
-        <motion.div {...fadeUp} style={{ padding: '12px 16px', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', marginBottom: '12px', fontSize: '13px', color: 'var(--expense)' }}>
-          {error}
+      {/* Voice/general error — auto-dismisses after 5s */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            key="error-banner"
+            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            style={{ padding: '12px 16px', background: 'rgba(239,68,68,0.1)', borderRadius: '12px', marginBottom: '12px', fontSize: '13px', color: 'var(--expense)' }}
+          >
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Retry state — server waking up */}
+      {loadError && (
+        <motion.div {...fadeUp} style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '13px', color: 'rgba(240,240,245,0.5)' }}>Не удалось загрузить данные</span>
+          <button
+            onClick={() => loadData(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(108,99,255,0.2)', border: '1px solid rgba(108,99,255,0.3)', borderRadius: '10px', padding: '6px 12px', color: 'var(--accent-light)', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+          >
+            <RefreshCw size={13} />
+            Обновить
+          </button>
         </motion.div>
       )}
 
-      {/* Balance card */}
-      <motion.div {...fadeUp} transition={{ delay: 0.05, ...fadeUp.transition }} style={{ marginBottom: '12px' }}>
+      {/* Loading skeleton for balance card */}
+      {isLoading && !summary && (
+        <motion.div {...fadeUp} transition={{ delay: 0.05, ...fadeUp.transition }} style={{ marginBottom: '12px' }}>
+          <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.15), rgba(167,139,250,0.06))', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '24px', padding: '24px' }}>
+            <p style={{ fontSize: '13px', color: 'rgba(240,240,245,0.3)', marginBottom: '8px' }}>Баланс за период</p>
+            <div style={{ height: '36px', width: '160px', borderRadius: '8px', background: 'rgba(255,255,255,0.06)', marginBottom: '16px' }} />
+            <div style={{ display: 'flex', gap: '24px' }}>
+              {[1, 2].map((i) => (
+                <div key={i}>
+                  <div style={{ height: '12px', width: '60px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', marginBottom: '6px' }} />
+                  <div style={{ height: '18px', width: '80px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Balance card — hidden while skeleton is showing */}
+      {!isLoading && <motion.div {...fadeUp} transition={{ delay: 0.05, ...fadeUp.transition }} style={{ marginBottom: '12px' }}>
         <div
           style={{
             background: 'linear-gradient(135deg, rgba(108,99,255,0.25), rgba(167,139,250,0.12))',
@@ -136,7 +206,7 @@ export function Dashboard() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </motion.div>}
 
       {/* Voice button */}
       <motion.div
