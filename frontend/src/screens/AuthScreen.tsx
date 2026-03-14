@@ -30,9 +30,16 @@ export function AuthScreen() {
 
         const catRes = await categoriesApi.list();
         setCategories(catRes.data);
-      } catch (err) {
-        setError('Ошибка авторизации. Попробуйте снова.');
-        console.error(err);
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { data?: { error?: string; detail?: string }; status?: number } };
+        const serverMsg = axiosErr?.response?.data?.error;
+        const serverDetail = axiosErr?.response?.data?.detail;
+        const status = axiosErr?.response?.status;
+        const msg = serverMsg
+          ? `${serverMsg}${serverDetail ? ': ' + serverDetail : ''}`
+          : 'Ошибка авторизации. Попробуйте снова.';
+        console.error('Auth error', status, msg, err);
+        setError(msg);
       } finally {
         setLoading(false);
       }

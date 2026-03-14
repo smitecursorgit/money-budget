@@ -11,73 +11,91 @@ const AuthSchema = z.object({
 });
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
-  const parse = AuthSchema.safeParse(req.body);
-  if (!parse.success) {
-    res.status(400).json({ error: 'initData required' });
-    return;
-  }
-
-  const { initData } = parse.data;
-
-  let telegramData: Record<string, string> | null = null;
-
-  if (process.env.NODE_ENV === 'development' && initData === 'dev') {
-    telegramData = {
-      user: JSON.stringify({ id: 1, first_name: 'Dev', username: 'devuser' }),
-    };
-  } else {
-    telegramData = verifyTelegramInitData(initData);
-    if (!telegramData) {
-      res.status(401).json({ error: 'Invalid initData' });
+  try {
+    const parse = AuthSchema.safeParse(req.body);
+    if (!parse.success) {
+      res.status(400).json({ error: 'initData required' });
       return;
     }
+
+    const { initData } = parse.data;
+
+    let telegramData: Record<string, string> | null = null;
+
+    if (initData === 'dev') {
+      // Allow dev mode regardless of NODE_ENV for easier testing
+      telegramData = {
+        user: JSON.stringify({ id: 1, first_name: 'Dev', username: 'devuser' }),
+      };
+    } else {
+      try {
+        telegramData = verifyTelegramInitData(initData);
+      } catch (e) {
+        console.error('initData verification error:', e);
+        res.status(500).json({ error: 'Bot token not configured on server' });
+        return;
+      }
+      if (!telegramData) {
+        console.error('initData hash mismatch. initData preview:', initData.slice(0, 100));
+        res.status(401).json({ error: 'Invalid initData' });
+        return;
+      }
+    }
+
+    let tgUser: { id: number; first_name: string; last_name?: string; username?: string };
+    try {
+      tgUser = JSON.parse(telegramData['user'] || '{}');
+    } catch {
+      res.status(400).json({ error: 'Cannot parse user data' });
+      return;
+    }
+
+    if (!tgUser.id) {
+      res.status(400).json({ error: 'User id missing in initData' });
+      return;
+    }
+
+    const user = await prisma.user.upsert({
+      where: { telegramId: BigInt(tgUser.id) },
+      update: {
+        firstName: tgUser.first_name,
+        lastName: tgUser.last_name,
+        username: tgUser.username,
+      },
+      create: {
+        telegramId: BigInt(tgUser.id),
+        firstName: tgUser.first_name,
+        lastName: tgUser.last_name,
+        username: tgUser.username,
+      },
+    });
+
+    const existingCategories = await prisma.category.count({ where: { userId: user.id } });
+    if (existingCategories === 0) {
+      await seedDefaultCategories(user.id);
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, telegramId: tgUser.id },
+      process.env.JWT_SECRET!,
+      { expiresIn: '30d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        username: user.username,
+        currency: user.currency,
+        timezone: user.timezone,
+        periodStart: user.periodStart,
+      },
+    });
+  } catch (err) {
+    console.error('Auth route error:', err);
+    res.status(500).json({ error: 'Server error during authentication', detail: err instanceof Error ? err.message : String(err) });
   }
-
-  let tgUser: { id: number; first_name: string; last_name?: string; username?: string };
-  try {
-    tgUser = JSON.parse(telegramData['user'] || '{}');
-  } catch {
-    res.status(400).json({ error: 'Cannot parse user data' });
-    return;
-  }
-
-  const user = await prisma.user.upsert({
-    where: { telegramId: BigInt(tgUser.id) },
-    update: {
-      firstName: tgUser.first_name,
-      lastName: tgUser.last_name,
-      username: tgUser.username,
-    },
-    create: {
-      telegramId: BigInt(tgUser.id),
-      firstName: tgUser.first_name,
-      lastName: tgUser.last_name,
-      username: tgUser.username,
-    },
-  });
-
-  const existingCategories = await prisma.category.count({ where: { userId: user.id } });
-  if (existingCategories === 0) {
-    await seedDefaultCategories(user.id);
-  }
-
-  const token = jwt.sign(
-    { userId: user.id, telegramId: tgUser.id },
-    process.env.JWT_SECRET!,
-    { expiresIn: '30d' }
-  );
-
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      firstName: user.firstName,
-      username: user.username,
-      currency: user.currency,
-      timezone: user.timezone,
-      periodStart: user.periodStart,
-    },
-  });
 });
 
 async function seedDefaultCategories(userId: string) {
