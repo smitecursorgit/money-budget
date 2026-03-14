@@ -20,11 +20,12 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Pick best supported mimeType for cross-platform compatibility
+      // Pick best supported mimeType — try webm first (Chrome), fall back to mp4 (iOS Safari)
       const mimeType = [
         'audio/webm;codecs=opus',
         'audio/webm',
         'audio/ogg;codecs=opus',
+        'audio/mp4;codecs=mp4a.40.2',
         'audio/mp4',
       ].find((m) => MediaRecorder.isTypeSupported(m)) || '';
 
@@ -38,7 +39,7 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
 
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: mimeType || 'audio/webm' });
+        const blob = new Blob(chunksRef.current, { type: mimeType || 'audio/mp4' });
         setState('processing');
         try {
           const { data } = await voiceApi.parseAudio(blob);
@@ -46,7 +47,7 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
         } catch (err: unknown) {
           const axiosErr = err as { response?: { data?: { error?: string } } };
           const serverMsg = axiosErr?.response?.data?.error;
-          onError?.(serverMsg || 'Не удалось распознать голос');
+          onError?.(serverMsg ? `${serverMsg} [${blob.type || 'no-type'}]` : 'Не удалось распознать голос');
         } finally {
           setState('idle');
         }

@@ -30,19 +30,19 @@ export const authApi = {
 
 export const voiceApi = {
   parseAudio: (blob: Blob) => {
-    const extMap: Record<string, string> = {
-      'audio/webm': 'webm',
-      'audio/webm;codecs=opus': 'webm',
-      'audio/ogg': 'ogg',
-      'audio/ogg;codecs=opus': 'ogg',
-      'audio/mp4': 'mp4',
-      'audio/mpeg': 'mp3',
-      'audio/wav': 'wav',
-      'audio/m4a': 'm4a',
-    };
-    const ext = extMap[blob.type] || extMap[blob.type.split(';')[0]] || 'webm';
+    const t = (blob.type || '').toLowerCase().split(';')[0].trim();
+    let ext = 'mp4'; // safe default for mobile (iOS always produces MPEG-4)
+    if (t.includes('webm')) ext = 'webm';
+    else if (t.includes('ogg')) ext = 'ogg';
+    else if (t.includes('wav')) ext = 'wav';
+    else if (t.includes('mpeg') || t.includes('mp3')) ext = 'mp3';
+    else if (t.includes('mp4') || t.includes('m4a') || t === '' || t.includes('video')) ext = 'mp4';
     const form = new FormData();
-    form.append('audio', blob, `recording.${ext}`);
+    // Re-create blob with audio/mp4 type when original is video/* or empty (iOS quirk)
+    const fixedBlob = (t.startsWith('video/') || t === '')
+      ? new Blob([blob], { type: 'audio/mp4' })
+      : blob;
+    form.append('audio', fixedBlob, `recording.${ext}`);
     return api.post('/voice/parse', form, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
   parseText: (text: string) => api.post('/voice/parse-text', { text }),
