@@ -6,6 +6,40 @@ import { authMiddleware } from '../middleware/auth';
 import { transcribeAudio, parseFinanceText } from '../services/openai';
 import { prisma } from '../lib/prisma';
 
+/**
+ * Detect real audio format from magic bytes, fall back to original filename extension.
+ * Groq Whisper requires the file to have a correct extension.
+ */
+function detectAudioExt(filePath: string, originalName: string): string {
+  try {
+    const buf = Buffer.alloc(12);
+    const fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buf, 0, 12, 0);
+    fs.closeSync(fd);
+
+    // WebM: 1A 45 DF A3
+    if (buf[0] === 0x1A && buf[1] === 0x45 && buf[2] === 0xDF && buf[3] === 0xA3) return 'webm';
+    // OGG: OggS
+    if (buf.slice(0, 4).toString('ascii') === 'OggS') return 'ogg';
+    // MP4/M4A: 'ftyp' at offset 4
+    if (buf.slice(4, 8).toString('ascii') === 'ftyp') return 'mp4';
+    // WAV: RIFF....WAVE
+    if (buf.slice(0, 4).toString('ascii') === 'RIFF') return 'wav';
+    // MP3: ID3 header or sync word
+    if (buf.slice(0, 3).toString('ascii') === 'ID3') return 'mp3';
+    if (buf[0] === 0xFF && (buf[1] & 0xE0) === 0xE0) return 'mp3';
+  } catch {
+    // ignore read errors — fall through to name-based detection
+  }
+
+  // Fall back to original filename extension
+  const nameExt = path.extname(originalName).slice(1).toLowerCase();
+  const allowed = ['webm', 'ogg', 'mp4', 'm4a', 'mp3', 'wav', 'flac', 'opus', 'mpeg'];
+  if (allowed.includes(nameExt)) return nameExt;
+
+  return 'mp4'; // safe mobile default
+}
+
 const router = Router();
 const upload = multer({
   dest: path.join(process.cwd(), 'tmp'),
@@ -28,7 +62,13 @@ router.post('/parse', authMiddleware, upload.single('audio'), async (req: Reques
     return;
   }
 
-  const filePath = req.file.path;
+  const rawPath = req.file.path;
+
+  // Multer saves files without extension — Groq determines format by filename extension.
+  // Detect real format from magic bytes, fall back to extension in original filename.
+  const ext = detectAudioExt(rawPath, req.file.originalname);
+  const filePath = `${rawPath}.${ext}`;
+  fs.renameSync(rawPath, filePath);
 
   try {
     const categories = await prisma.category.findMany({
