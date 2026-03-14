@@ -16,19 +16,31 @@ const fadeUp = {
   transition: { type: 'spring', stiffness: 260, damping: 24 },
 };
 
-const RETRY_DELAY_MS = 4000;
-const MAX_RETRIES = 3;
+const CACHE_KEY = 'dashboard_cache';
+
+function readCache(): { summary: StatsSummary; transactions: Transaction[]; reminders: Reminder[] } | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function writeCache(data: { summary: StatsSummary; transactions: Transaction[]; reminders: Reminder[] }) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+}
 
 export function Dashboard() {
   const { user, categories } = useAppStore();
   const { setTransactions } = useTransactionStore();
   const navigate = useNavigate();
 
-  const [summary, setSummary] = useState<StatsSummary | null>(null);
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
-  const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>([]);
+  // Load from cache instantly — shows data before first API call completes
+  const cached = readCache();
+  const [summary, setSummary] = useState<StatsSummary | null>(cached?.summary ?? null);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(cached?.transactions ?? []);
+  const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>(cached?.reminders ?? []);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -47,41 +59,43 @@ export function Dashboard() {
       transactionsApi.list({ limit: 5 }),
       remindersApi.upcoming(7),
     ]);
-    setSummary(summaryRes.data);
-    setRecentTransactions(txRes.data.transactions);
-    setTransactions(txRes.data.transactions, txRes.data.total);
-    setUpcomingReminders(remRes.data.slice(0, 3));
+    const newSummary: StatsSummary = summaryRes.data;
+    const newTransactions: Transaction[] = txRes.data.transactions;
+    const newReminders: Reminder[] = remRes.data.slice(0, 3);
+
+    setSummary(newSummary);
+    setRecentTransactions(newTransactions);
+    setTransactions(newTransactions, txRes.data.total);
+    setUpcomingReminders(newReminders);
+    writeCache({ summary: newSummary, transactions: newTransactions, reminders: newReminders });
   }, [setTransactions]);
 
   const loadData = useCallback(async (isManual = false) => {
     if (isManual) {
-      setIsLoading(true);
+      setRefreshing(true);
       setLoadError(false);
       retryCountRef.current = 0;
     }
-
     try {
       await fetchData();
-      setIsLoading(false);
       setLoadError(false);
       retryCountRef.current = 0;
     } catch {
-      if (retryCountRef.current < MAX_RETRIES) {
+      if (retryCountRef.current < 2) {
         retryCountRef.current += 1;
-        // Auto-retry silently — handles Render cold start (server waking up)
-        retryTimerRef.current = setTimeout(() => loadData(), RETRY_DELAY_MS);
+        retryTimerRef.current = setTimeout(() => loadData(), 5000);
       } else {
-        setIsLoading(false);
-        setLoadError(true);
+        // Only show error if we have no cached data
+        if (!readCache()) setLoadError(true);
       }
+    } finally {
+      setRefreshing(false);
     }
   }, [fetchData]);
 
   useEffect(() => {
     loadData();
-    return () => {
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-    };
+    return () => { if (retryTimerRef.current) clearTimeout(retryTimerRef.current); };
   }, [loadData]);
 
   const handleVoiceConfirm = async (entry: ParsedEntry) => {
@@ -123,7 +137,7 @@ export function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Retry state — server waking up */}
+      {/* Refresh error — only if no cache available */}
       {loadError && (
         <motion.div {...fadeUp} style={{ padding: '14px 16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '13px', color: 'rgba(240,240,245,0.5)' }}>Не удалось загрузить данные</span>
@@ -137,26 +151,8 @@ export function Dashboard() {
         </motion.div>
       )}
 
-      {/* Loading skeleton for balance card */}
-      {isLoading && !summary && (
-        <motion.div {...fadeUp} transition={{ delay: 0.05, ...fadeUp.transition }} style={{ marginBottom: '12px' }}>
-          <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.15), rgba(167,139,250,0.06))', border: '1px solid rgba(108,99,255,0.2)', borderRadius: '24px', padding: '24px' }}>
-            <p style={{ fontSize: '13px', color: 'rgba(240,240,245,0.3)', marginBottom: '8px' }}>Баланс за период</p>
-            <div style={{ height: '36px', width: '160px', borderRadius: '8px', background: 'rgba(255,255,255,0.06)', marginBottom: '16px' }} />
-            <div style={{ display: 'flex', gap: '24px' }}>
-              {[1, 2].map((i) => (
-                <div key={i}>
-                  <div style={{ height: '12px', width: '60px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', marginBottom: '6px' }} />
-                  <div style={{ height: '18px', width: '80px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)' }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Balance card — hidden while skeleton is showing */}
-      {!isLoading && <motion.div {...fadeUp} transition={{ delay: 0.05, ...fadeUp.transition }} style={{ marginBottom: '12px' }}>
+      {/* Balance card — always visible, shows cached or live data */}
+      <motion.div {...fadeUp} transition={{ delay: 0.05, ...fadeUp.transition }} style={{ marginBottom: '12px' }}>
         <div
           style={{
             background: 'linear-gradient(135deg, rgba(108,99,255,0.25), rgba(167,139,250,0.12))',
@@ -179,9 +175,12 @@ export function Dashboard() {
               filter: 'blur(30px)',
             }}
           />
-          <p style={{ fontSize: '13px', color: 'rgba(240,240,245,0.5)', marginBottom: '8px' }}>
-            Баланс за период
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <p style={{ fontSize: '13px', color: 'rgba(240,240,245,0.5)' }}>Баланс за период</p>
+            {refreshing && (
+              <div style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.15)', borderTopColor: 'rgba(255,255,255,0.5)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            )}
+          </div>
           <p style={{ fontSize: '36px', fontWeight: 800, letterSpacing: '-0.02em', color: '#fff' }}>
             {summary ? fmt(summary.balance) : '—'}
           </p>
@@ -206,7 +205,7 @@ export function Dashboard() {
             </div>
           </div>
         </div>
-      </motion.div>}
+      </motion.div>
 
       {/* Voice button */}
       <motion.div

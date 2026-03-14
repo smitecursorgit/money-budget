@@ -131,3 +131,7 @@ button {
   padding: 0 20px;
   margin-bottom: 8px;
 }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
