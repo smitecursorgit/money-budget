@@ -7,6 +7,22 @@ export const api = axios.create({
   timeout: 30000,
 });
 
+// Global error normalizer — make network/timeout errors human-readable
+api.interceptors.response.use(
+  (r) => r,
+  (err) => {
+    if (!err.response) {
+      // Network error or timeout
+      if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        err.message = 'Сервер не отвечает. Проверьте интернет.';
+      } else {
+        err.message = 'Нет соединения с сервером.';
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;

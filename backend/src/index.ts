@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
+import rateLimit from 'express-rate-limit';
 
 import authRouter from './routes/auth';
 import voiceRouter from './routes/voice';
@@ -11,43 +12,57 @@ import categoriesRouter from './routes/categories';
 import statsRouter from './routes/stats';
 import remindersRouter from './routes/reminders';
 import settingsRouter from './routes/settings';
-import { initBot } from './bot';
+import { initBot, getBot } from './bot';
 import { startCronJobs } from './services/cron';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001');
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  process.env.MINI_APP_URL,
-].filter(Boolean) as string[];
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.some((o) => origin.startsWith(o))) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Allow all in case Telegram WebApp sends custom origin
-      }
-    },
+    origin: (_origin, callback) => callback(null, true),
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Rate limiters
+const authLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 20,
+  message: { error: 'Слишком много запросов. Попробуйте через 10 минут.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const voiceLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  message: { error: 'Слишком много голосовых запросов. Подождите минуту.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-app.use('/auth', authRouter);
-app.use('/voice', voiceRouter);
+app.use('/auth', authLimiter, authRouter);
+app.use('/voice', voiceLimiter, voiceRouter);
 app.use('/transactions', transactionsRouter);
 app.use('/categories', categoriesRouter);
 app.use('/stats', statsRouter);
 app.use('/reminders', remindersRouter);
 app.use('/settings', settingsRouter);
+
+// Telegram webhook endpoint (used in production instead of polling)
+app.post('/webhook/telegram', express.json(), (req, res) => {
+  const bot = getBot();
+  if (bot) {
+    bot.processUpdate(req.body);
+  }
+  res.sendStatus(200);
+});
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 

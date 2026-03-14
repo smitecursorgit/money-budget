@@ -22,8 +22,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
     let telegramData: Record<string, string> | null = null;
 
-    if (initData === 'dev') {
-      // Allow dev mode regardless of NODE_ENV for easier testing
+    if (initData === 'dev' && process.env.NODE_ENV !== 'production') {
+      // Dev mode only works in local development — never in production
       telegramData = {
         user: JSON.stringify({ id: 1, first_name: 'Dev', username: 'devuser' }),
       };

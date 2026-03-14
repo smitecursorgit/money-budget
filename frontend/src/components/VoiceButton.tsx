@@ -47,7 +47,7 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
         } catch (err: unknown) {
           const axiosErr = err as { response?: { data?: { error?: string } } };
           const serverMsg = axiosErr?.response?.data?.error;
-          onError?.(serverMsg ? `${serverMsg} [${blob.type || 'no-type'}]` : 'Не удалось распознать голос');
+          onError?.(serverMsg || 'Не удалось распознать голос. Попробуйте ещё раз.');
         } finally {
           setState('idle');
         }
