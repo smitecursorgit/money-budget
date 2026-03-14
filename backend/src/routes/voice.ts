@@ -11,11 +11,11 @@ const upload = multer({
   dest: path.join(process.cwd(), 'tmp'),
   limits: { fileSize: 25 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = ['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/wav', 'audio/mpeg'];
-    if (allowed.includes(file.mimetype)) {
+    // Accept any audio/* type — Groq Whisper supports webm, ogg, mp4, wav, mp3, m4a
+    if (file.mimetype.startsWith('audio/') || file.mimetype === 'application/octet-stream') {
       cb(null, true);
     } else {
-      cb(new Error('Unsupported audio format'));
+      cb(new Error(`Unsupported format: ${file.mimetype}`));
     }
   },
 });
@@ -46,7 +46,12 @@ router.post('/parse', authMiddleware, upload.single('audio'), async (req: Reques
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Voice parse error:', message);
-    res.status(500).json({ error: 'Ошибка распознавания. Проверьте OpenAI API ключ.' });
+    const isApiKeyError = message.includes('API key') || message.includes('401') || message.includes('auth');
+    res.status(500).json({
+      error: isApiKeyError
+        ? 'GROQ_API_KEY не настроен или неверный на сервере'
+        : `Ошибка распознавания: ${message}`,
+    });
   } finally {
     fs.unlink(filePath, () => {});
   }
