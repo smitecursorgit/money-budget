@@ -30,8 +30,19 @@ export const authApi = {
 
 export const voiceApi = {
   parseAudio: (blob: Blob) => {
+    const extMap: Record<string, string> = {
+      'audio/webm': 'webm',
+      'audio/webm;codecs=opus': 'webm',
+      'audio/ogg': 'ogg',
+      'audio/ogg;codecs=opus': 'ogg',
+      'audio/mp4': 'mp4',
+      'audio/mpeg': 'mp3',
+      'audio/wav': 'wav',
+      'audio/m4a': 'm4a',
+    };
+    const ext = extMap[blob.type] || extMap[blob.type.split(';')[0]] || 'webm';
     const form = new FormData();
-    form.append('audio', blob, 'recording.webm');
+    form.append('audio', blob, `recording.${ext}`);
     return api.post('/voice/parse', form, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
   parseText: (text: string) => api.post('/voice/parse-text', { text }),
