@@ -1,6 +1,37 @@
 import { ParsedEntry, Category } from '../types/index.ts';
 import { transactionsApi, remindersApi } from '../api/client.ts';
 
+/**
+ * Find the best matching category for a parsed AI entry.
+ * Priority: 1) exact name match, 2) partial name match, 3) keyword match.
+ */
+function findCategory(categories: Category[], aiCategoryName: string | undefined, type: 'income' | 'expense'): Category | undefined {
+  if (!aiCategoryName) return undefined;
+
+  const typed = categories.filter((c) => c.type === type);
+  const needle = aiCategoryName.toLowerCase().trim();
+
+  // 1. Exact name match (case-insensitive)
+  const exact = typed.find((c) => c.name.toLowerCase() === needle);
+  if (exact) return exact;
+
+  // 2. Partial name match (e.g. AI returns "Алкоголь" but category is "Алкогольные напитки")
+  const partial = typed.find(
+    (c) => c.name.toLowerCase().includes(needle) || needle.includes(c.name.toLowerCase())
+  );
+  if (partial) return partial;
+
+  // 3. Keyword match — check if AI category name appears in any category's keywords
+  const byKeyword = typed.find((c) =>
+    c.keywords.some(
+      (kw) => kw.toLowerCase() === needle || needle.includes(kw.toLowerCase())
+    )
+  );
+  if (byKeyword) return byKeyword;
+
+  return undefined;
+}
+
 export async function saveVoiceEntry(entry: ParsedEntry, categories: Category[]): Promise<void> {
   if (entry.type === 'reminder') {
     await remindersApi.create({
@@ -12,11 +43,7 @@ export async function saveVoiceEntry(entry: ParsedEntry, categories: Category[])
     return;
   }
 
-  const matchedCategory = categories.find(
-    (c) =>
-      c.name.toLowerCase() === entry.category?.toLowerCase() &&
-      c.type === entry.type
-  );
+  const matchedCategory = findCategory(categories, entry.category, entry.type);
 
   await transactionsApi.create({
     amount: entry.amount || 0,

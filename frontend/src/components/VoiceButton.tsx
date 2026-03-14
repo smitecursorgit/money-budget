@@ -20,7 +20,7 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Pick best supported mimeType — try webm first (Chrome), fall back to mp4 (iOS Safari)
+      // Pick best supported mimeType — try webm first (Chrome/Android), fall back to mp4 (iOS)
       const mimeType = [
         'audio/webm;codecs=opus',
         'audio/webm',
@@ -61,13 +61,17 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
   }, [onResult, onError]);
 
   const stopRecording = useCallback(() => {
-    mediaRecorderRef.current?.stop();
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
   }, []);
 
-  const handlePress = () => {
+  // Tap-to-toggle: single click starts/stops recording.
+  // No onPointerDown/Up to avoid double-trigger (pointerDown + click = two events).
+  const handleClick = useCallback(() => {
     if (state === 'idle') startRecording();
     else if (state === 'recording') stopRecording();
-  };
+  }, [state, startRecording, stopRecording]);
 
   const isRecording = state === 'recording';
   const isProcessing = state === 'processing';
@@ -75,9 +79,7 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
       <motion.button
-        onPointerDown={state === 'idle' ? startRecording : undefined}
-        onPointerUp={state === 'recording' ? stopRecording : undefined}
-        onClick={state === 'processing' ? undefined : handlePress}
+        onClick={handleClick}
         disabled={isProcessing}
         animate={{
           scale: isRecording ? 1.05 : 1,

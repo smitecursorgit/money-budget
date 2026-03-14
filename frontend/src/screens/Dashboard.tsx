@@ -26,6 +26,13 @@ export function Dashboard() {
   const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>([]);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const errorTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showError = useCallback((msg: string) => {
+    setError(msg);
+    if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    errorTimerRef.current = setTimeout(() => setError(null), 5000);
+  }, []);
 
   const loadData = useCallback(async () => {
     try {
@@ -39,7 +46,7 @@ export function Dashboard() {
       setTransactions(txRes.data.transactions, txRes.data.total);
       setUpcomingReminders(remRes.data.slice(0, 3));
     } catch {
-      setError('Ошибка загрузки данных');
+      showError('Ошибка загрузки данных');
     }
   }, [setTransactions]);
 
@@ -141,8 +148,8 @@ export function Dashboard() {
             Голосовой ввод
           </p>
           <VoiceButton
-            onResult={(t, p) => setVoiceResult({ transcription: t, parsed: p })}
-            onError={(msg) => setError(msg)}
+            onResult={(t, p) => { setError(null); setVoiceResult({ transcription: t, parsed: p }); }}
+            onError={(msg) => showError(msg)}
           />
         </Card>
       </motion.div>

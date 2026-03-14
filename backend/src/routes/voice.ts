@@ -54,7 +54,18 @@ const upload = multer({
   },
 });
 
-router.post('/parse', authMiddleware, upload.single('audio'), async (req: Request, res: Response): Promise<void> => {
+// Multer error handler — must be registered before the route
+const uploadSingle = (req: Request, res: Response, next: import('express').NextFunction) => {
+  upload.single('audio')(req, res, (err) => {
+    if (err) {
+      res.status(400).json({ error: `Ошибка загрузки файла: ${err.message}` });
+      return;
+    }
+    next();
+  });
+};
+
+router.post('/parse', authMiddleware, uploadSingle, async (req: Request, res: Response): Promise<void> => {
   const userId = req.user!.userId;
 
   if (!req.file) {
@@ -101,26 +112,27 @@ router.post('/parse-text', authMiddleware, async (req: Request, res: Response): 
   const userId = req.user!.userId;
   const { text } = req.body;
 
-  if (!text) {
+  if (!text || typeof text !== 'string') {
     res.status(400).json({ error: 'text required' });
     return;
   }
 
-  const categories = await prisma.category.findMany({
-    where: { userId },
-    select: { name: true, type: true, keywords: true },
-  });
-
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  const today = new Date().toLocaleDateString('sv', { timeZone: user?.timezone || 'Europe/Moscow' });
-
   try {
+    const [categories, user] = await Promise.all([
+      prisma.category.findMany({ where: { userId }, select: { name: true, type: true, keywords: true } }),
+      prisma.user.findUnique({ where: { id: userId } }),
+    ]);
+
+    const today = new Date().toLocaleDateString('sv', { timeZone: user?.timezone || 'Europe/Moscow' });
     const parsed = await parseFinanceText(text, categories, today);
     res.json({ transcription: text, parsed });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Text parse error:', message);
-    res.status(500).json({ error: 'Ошибка обработки текста. Проверьте OpenAI API ключ.' });
+    const isApiKeyError = message.includes('API key') || message.includes('401') || message.includes('auth');
+    res.status(500).json({
+      error: isApiKeyError ? 'GROQ_API_KEY не настроен или неверный' : `Ошибка обработки текста: ${message}`,
+    });
   }
 });
 
