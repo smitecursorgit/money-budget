@@ -13,28 +13,38 @@ const SettingsSchema = z.object({
 });
 
 router.get('/', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { currency: true, timezone: true, periodStart: true, firstName: true, username: true },
-  });
-  res.json(user);
+  try {
+    const userId = req.user!.userId;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { currency: true, timezone: true, periodStart: true, firstName: true, username: true },
+    });
+    res.json(user);
+  } catch (err) {
+    console.error('Settings get error:', err);
+    res.status(500).json({ error: 'Не удалось загрузить настройки' });
+  }
 });
 
 router.patch('/', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const parse = SettingsSchema.safeParse(req.body);
-  if (!parse.success) {
-    res.status(400).json({ error: parse.error.flatten() });
-    return;
-  }
+  try {
+    const userId = req.user!.userId;
+    const parse = SettingsSchema.safeParse(req.body);
+    if (!parse.success) {
+      res.status(400).json({ error: parse.error.flatten() });
+      return;
+    }
 
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data: parse.data,
-    select: { currency: true, timezone: true, periodStart: true },
-  });
-  res.json(updated);
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: parse.data,
+      select: { currency: true, timezone: true, periodStart: true },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error('Settings update error:', err);
+    res.status(500).json({ error: 'Не удалось сохранить настройки' });
+  }
 });
 
 export default router;

@@ -97,12 +97,21 @@ router.post('/parse', authMiddleware, uploadSingle, async (req: Request, res: Re
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Voice parse error:', message);
-    const isApiKeyError = message.includes('API key') || message.includes('401') || message.includes('auth');
-    res.status(500).json({
-      error: isApiKeyError
-        ? 'GROQ_API_KEY не настроен или неверный на сервере'
-        : `Ошибка распознавания: ${message}`,
-    });
+
+    let userError: string;
+    if (message.includes('API key') || message.includes('401') || message.includes('Unauthorized')) {
+      userError = 'GROQ_API_KEY не настроен или неверный на сервере';
+    } else if (message.includes('could not process file') || message.includes('Invalid file')) {
+      userError = 'Не удалось распознать аудио. Говорите чётче и ближе к микрофону.';
+    } else if (message.includes('prisma') || message.includes('prepared statement') || message.includes('ConnectorError') || message.includes('P1') || message.includes('P2')) {
+      userError = 'Сервис временно недоступен. Попробуйте ещё раз.';
+    } else if (message.includes('timeout') || message.includes('ETIMEDOUT') || message.includes('ECONNREFUSED')) {
+      userError = 'Сервер не отвечает. Проверьте соединение.';
+    } else {
+      userError = 'Не удалось обработать запрос. Попробуйте ещё раз.';
+    }
+
+    res.status(500).json({ error: userError });
   } finally {
     fs.unlink(filePath, () => {});
   }
@@ -129,9 +138,9 @@ router.post('/parse-text', authMiddleware, async (req: Request, res: Response): 
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('Text parse error:', message);
-    const isApiKeyError = message.includes('API key') || message.includes('401') || message.includes('auth');
+    const isApiKeyError = message.includes('API key') || message.includes('401') || message.includes('Unauthorized');
     res.status(500).json({
-      error: isApiKeyError ? 'GROQ_API_KEY не настроен или неверный' : `Ошибка обработки текста: ${message}`,
+      error: isApiKeyError ? 'GROQ_API_KEY не настроен или неверный' : 'Не удалось обработать запрос. Попробуйте ещё раз.',
     });
   }
 });

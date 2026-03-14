@@ -14,71 +14,90 @@ const ReminderSchema = z.object({
 });
 
 router.get('/', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const reminders = await prisma.reminder.findMany({
-    where: { userId },
-    orderBy: { nextDate: 'asc' },
-  });
-  res.json(reminders);
+  try {
+    const userId = req.user!.userId;
+    const reminders = await prisma.reminder.findMany({
+      where: { userId },
+      orderBy: { nextDate: 'asc' },
+    });
+    res.json(reminders);
+  } catch (err) {
+    console.error('Reminders list error:', err);
+    res.status(500).json({ error: 'Не удалось загрузить напоминания' });
+  }
 });
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const parse = ReminderSchema.safeParse(req.body);
-  if (!parse.success) {
-    res.status(400).json({ error: parse.error.flatten() });
-    return;
+  try {
+    const userId = req.user!.userId;
+    const parse = ReminderSchema.safeParse(req.body);
+    if (!parse.success) {
+      res.status(400).json({ error: parse.error.flatten() });
+      return;
+    }
+    const { title, amount, recurrence, nextDate } = parse.data;
+    const reminder = await prisma.reminder.create({
+      data: { userId, title, amount, recurrence, nextDate: new Date(nextDate) },
+    });
+    res.status(201).json(reminder);
+  } catch (err) {
+    console.error('Reminder create error:', err);
+    res.status(500).json({ error: 'Не удалось создать напоминание' });
   }
-
-  const { title, amount, recurrence, nextDate } = parse.data;
-  const reminder = await prisma.reminder.create({
-    data: { userId, title, amount, recurrence, nextDate: new Date(nextDate) },
-  });
-  res.status(201).json(reminder);
 });
 
 router.put('/:id', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const { id } = req.params;
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
 
-  const existing = await prisma.reminder.findFirst({ where: { id, userId } });
-  if (!existing) {
-    res.status(404).json({ error: 'Not found' });
-    return;
+    const existing = await prisma.reminder.findFirst({ where: { id, userId } });
+    if (!existing) {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
+
+    const parse = ReminderSchema.partial().merge(z.object({ isActive: z.boolean().optional() })).safeParse(req.body);
+    if (!parse.success) {
+      res.status(400).json({ error: parse.error.flatten() });
+      return;
+    }
+
+    const data = parse.data;
+    const updated = await prisma.reminder.update({
+      where: { id },
+      data: {
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(data.amount !== undefined ? { amount: data.amount } : {}),
+        ...(data.recurrence !== undefined ? { recurrence: data.recurrence } : {}),
+        ...(data.nextDate !== undefined ? { nextDate: new Date(data.nextDate) } : {}),
+        ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
+      },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error('Reminder update error:', err);
+    res.status(500).json({ error: 'Не удалось обновить напоминание' });
   }
-
-  const parse = ReminderSchema.partial().merge(z.object({ isActive: z.boolean().optional() })).safeParse(req.body);
-  if (!parse.success) {
-    res.status(400).json({ error: parse.error.flatten() });
-    return;
-  }
-
-  const data = parse.data;
-  const updated = await prisma.reminder.update({
-    where: { id },
-    data: {
-      ...(data.title !== undefined ? { title: data.title } : {}),
-      ...(data.amount !== undefined ? { amount: data.amount } : {}),
-      ...(data.recurrence !== undefined ? { recurrence: data.recurrence } : {}),
-      ...(data.nextDate !== undefined ? { nextDate: new Date(data.nextDate) } : {}),
-      ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
-    },
-  });
-  res.json(updated);
 });
 
 router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const { id } = req.params;
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
 
-  const existing = await prisma.reminder.findFirst({ where: { id, userId } });
-  if (!existing) {
-    res.status(404).json({ error: 'Not found' });
-    return;
+    const existing = await prisma.reminder.findFirst({ where: { id, userId } });
+    if (!existing) {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
+
+    await prisma.reminder.delete({ where: { id } });
+    res.status(204).send();
+  } catch (err) {
+    console.error('Reminder delete error:', err);
+    res.status(500).json({ error: 'Не удалось удалить напоминание' });
   }
-
-  await prisma.reminder.delete({ where: { id } });
-  res.status(204).send();
 });
 
 router.get('/upcoming', async (req: Request, res: Response): Promise<void> => {

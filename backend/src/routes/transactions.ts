@@ -50,74 +50,79 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const parse = CreateTransactionSchema.safeParse(req.body);
-  if (!parse.success) {
-    res.status(400).json({ error: parse.error.flatten() });
-    return;
+  try {
+    const userId = req.user!.userId;
+    const parse = CreateTransactionSchema.safeParse(req.body);
+    if (!parse.success) {
+      res.status(400).json({ error: parse.error.flatten() });
+      return;
+    }
+
+    const { amount, type, categoryId, date, note } = parse.data;
+    const transaction = await prisma.transaction.create({
+      data: { userId, amount, type, categoryId, date: date ? new Date(date) : new Date(), note },
+      include: { category: true },
+    });
+    res.status(201).json(transaction);
+  } catch (err) {
+    console.error('Transaction create error:', err);
+    res.status(500).json({ error: 'Не удалось сохранить операцию' });
   }
-
-  const { amount, type, categoryId, date, note } = parse.data;
-
-  const transaction = await prisma.transaction.create({
-    data: {
-      userId,
-      amount,
-      type,
-      categoryId,
-      date: date ? new Date(date) : new Date(),
-      note,
-    },
-    include: { category: true },
-  });
-
-  res.status(201).json(transaction);
 });
 
 router.put('/:id', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const { id } = req.params;
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
 
-  const existing = await prisma.transaction.findFirst({ where: { id, userId } });
-  if (!existing) {
-    res.status(404).json({ error: 'Not found' });
-    return;
+    const existing = await prisma.transaction.findFirst({ where: { id, userId } });
+    if (!existing) {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
+
+    const parse = UpdateTransactionSchema.safeParse(req.body);
+    if (!parse.success) {
+      res.status(400).json({ error: parse.error.flatten() });
+      return;
+    }
+
+    const data = parse.data;
+    const updated = await prisma.transaction.update({
+      where: { id },
+      data: {
+        ...(data.amount !== undefined ? { amount: data.amount } : {}),
+        ...(data.type !== undefined ? { type: data.type } : {}),
+        ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
+        ...(data.date !== undefined ? { date: new Date(data.date) } : {}),
+        ...(data.note !== undefined ? { note: data.note } : {}),
+      },
+      include: { category: true },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error('Transaction update error:', err);
+    res.status(500).json({ error: 'Не удалось обновить операцию' });
   }
-
-  const parse = UpdateTransactionSchema.safeParse(req.body);
-  if (!parse.success) {
-    res.status(400).json({ error: parse.error.flatten() });
-    return;
-  }
-
-  const data = parse.data;
-  const updated = await prisma.transaction.update({
-    where: { id },
-    data: {
-      ...(data.amount !== undefined ? { amount: data.amount } : {}),
-      ...(data.type !== undefined ? { type: data.type } : {}),
-      ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
-      ...(data.date !== undefined ? { date: new Date(data.date) } : {}),
-      ...(data.note !== undefined ? { note: data.note } : {}),
-    },
-    include: { category: true },
-  });
-
-  res.json(updated);
 });
 
 router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const { id } = req.params;
+  try {
+    const userId = req.user!.userId;
+    const { id } = req.params;
 
-  const existing = await prisma.transaction.findFirst({ where: { id, userId } });
-  if (!existing) {
-    res.status(404).json({ error: 'Not found' });
-    return;
+    const existing = await prisma.transaction.findFirst({ where: { id, userId } });
+    if (!existing) {
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
+
+    await prisma.transaction.delete({ where: { id } });
+    res.status(204).send();
+  } catch (err) {
+    console.error('Transaction delete error:', err);
+    res.status(500).json({ error: 'Не удалось удалить операцию' });
   }
-
-  await prisma.transaction.delete({ where: { id } });
-  res.status(204).send();
 });
 
 export default router;
