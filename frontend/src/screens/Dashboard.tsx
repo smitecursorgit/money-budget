@@ -54,7 +54,8 @@ export function Dashboard() {
 
   const handleVoiceConfirm = async (entry: ParsedEntry) => {
     await saveVoiceEntry(entry, categories);
-    await loadData();
+    // Reload silently after save — don't show error if refresh fails (entry was already saved)
+    loadData().catch(() => {});
   };
 
   const currency = user?.currency || 'RUB';

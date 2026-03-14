@@ -82,21 +82,26 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
 });
 
 router.get('/upcoming', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const days = parseInt((req.query.days as string) || '7');
-  const until = new Date();
-  until.setDate(until.getDate() + days);
+  try {
+    const userId = req.user!.userId;
+    const days = parseInt((req.query.days as string) || '7');
+    const until = new Date();
+    until.setDate(until.getDate() + days);
 
-  const reminders = await prisma.reminder.findMany({
-    where: {
-      userId,
-      isActive: true,
-      nextDate: { lte: until },
-    },
-    orderBy: { nextDate: 'asc' },
-  });
+    const reminders = await prisma.reminder.findMany({
+      where: {
+        userId,
+        isActive: true,
+        nextDate: { lte: until },
+      },
+      orderBy: { nextDate: 'asc' },
+    });
 
-  res.json(reminders);
+    res.json(reminders);
+  } catch (err) {
+    console.error('Reminders upcoming error:', err);
+    res.status(500).json({ error: 'Failed to load reminders' });
+  }
 });
 
 export default router;

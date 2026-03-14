@@ -22,15 +22,26 @@ export function VoiceConfirmModal({
   const [editing, setEditing] = useState(false);
   const [entry, setEntry] = useState<ParsedEntry>({ ...parsed });
   const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const isReminder = entry.type === 'reminder';
   const isIncome = entry.type === 'income';
 
   const handleConfirm = async () => {
+    setSaveError(null);
     setLoading(true);
     try {
       await onConfirm(entry);
       onClose();
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string; fieldErrors?: Record<string, string[]> } } };
+      const serverMsg = axiosErr?.response?.data?.error;
+      const fieldErrors = axiosErr?.response?.data?.fieldErrors;
+      if (fieldErrors?.amount) {
+        setSaveError('Укажите сумму — она не может быть нулевой');
+      } else {
+        setSaveError(serverMsg || 'Не удалось сохранить. Попробуйте ещё раз.');
+      }
     } finally {
       setLoading(false);
     }
@@ -137,6 +148,12 @@ export function VoiceConfirmModal({
             </div>
           ) : (
             <EditForm entry={entry} categories={categories} onChange={setEntry} />
+          )}
+
+          {saveError && (
+            <div style={{ marginBottom: '12px', padding: '10px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '12px', fontSize: '13px', color: '#f87171' }}>
+              {saveError}
+            </div>
           )}
 
           <div style={{ display: 'flex', gap: '10px' }}>

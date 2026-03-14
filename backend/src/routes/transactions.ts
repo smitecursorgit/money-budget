@@ -17,31 +17,36 @@ const CreateTransactionSchema = z.object({
 const UpdateTransactionSchema = CreateTransactionSchema.partial();
 
 router.get('/', async (req: Request, res: Response): Promise<void> => {
-  const userId = req.user!.userId;
-  const { type, categoryId, from, to, limit = '50', offset = '0' } = req.query;
+  try {
+    const userId = req.user!.userId;
+    const { type, categoryId, from, to, limit = '50', offset = '0' } = req.query;
 
-  const where: Record<string, unknown> = { userId };
-  if (type) where['type'] = type;
-  if (categoryId) where['categoryId'] = categoryId;
-  if (from || to) {
-    where['date'] = {
-      ...(from ? { gte: new Date(from as string) } : {}),
-      ...(to ? { lte: new Date(to as string) } : {}),
-    };
+    const where: Record<string, unknown> = { userId };
+    if (type) where['type'] = type;
+    if (categoryId) where['categoryId'] = categoryId;
+    if (from || to) {
+      where['date'] = {
+        ...(from ? { gte: new Date(from as string) } : {}),
+        ...(to ? { lte: new Date(to as string) } : {}),
+      };
+    }
+
+    const [transactions, total] = await Promise.all([
+      prisma.transaction.findMany({
+        where,
+        include: { category: true },
+        orderBy: { date: 'desc' },
+        take: Number(limit),
+        skip: Number(offset),
+      }),
+      prisma.transaction.count({ where }),
+    ]);
+
+    res.json({ transactions, total });
+  } catch (err) {
+    console.error('Transactions list error:', err);
+    res.status(500).json({ error: 'Failed to load transactions' });
   }
-
-  const [transactions, total] = await Promise.all([
-    prisma.transaction.findMany({
-      where,
-      include: { category: true },
-      orderBy: { date: 'desc' },
-      take: Number(limit),
-      skip: Number(offset),
-    }),
-    prisma.transaction.count({ where }),
-  ]);
-
-  res.json({ transactions, total });
 });
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
