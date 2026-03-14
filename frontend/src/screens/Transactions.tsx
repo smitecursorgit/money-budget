@@ -17,6 +17,8 @@ const FILTER_TYPES = [
   { label: 'Доходы', value: 'income' },
 ];
 
+const PAGE_SIZE = 50;
+
 export function Transactions() {
   const { user, categories } = useAppStore();
   const { transactions, total, setTransactions, removeTransaction } = useTransactionStore();
@@ -26,6 +28,8 @@ export function Transactions() {
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry } | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [offset, setOffset] = useState(0);
 
   const currency = user?.currency || 'RUB';
   const fmt = (n: number) =>
@@ -33,8 +37,9 @@ export function Transactions() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setOffset(0);
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, string | number> = { limit: PAGE_SIZE, offset: 0 };
       if (filterType) params['type'] = filterType;
       const { data } = await transactionsApi.list(params);
       setTransactions(data.transactions, data.total);
@@ -42,6 +47,20 @@ export function Transactions() {
       setLoading(false);
     }
   }, [filterType, setTransactions]);
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    const nextOffset = offset + PAGE_SIZE;
+    try {
+      const params: Record<string, string | number> = { limit: PAGE_SIZE, offset: nextOffset };
+      if (filterType) params['type'] = filterType;
+      const { data } = await transactionsApi.list(params);
+      setTransactions([...transactions, ...data.transactions], data.total);
+      setOffset(nextOffset);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [offset, filterType, transactions, setTransactions]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -175,6 +194,32 @@ export function Transactions() {
             </div>
           </motion.div>
         ))
+      )}
+
+      {/* Load more button */}
+      {transactions.length > 0 && transactions.length < total && !search && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px 0 24px' }}>
+          <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
+            Показано {transactions.length} из {total}
+          </p>
+          <button
+            onClick={loadMore}
+            disabled={loadingMore}
+            style={{
+              padding: '10px 28px',
+              borderRadius: '14px',
+              border: '1px solid rgba(108,99,255,0.3)',
+              background: 'rgba(108,99,255,0.15)',
+              color: 'var(--accent-light)',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: loadingMore ? 'default' : 'pointer',
+              opacity: loadingMore ? 0.6 : 1,
+            }}
+          >
+            {loadingMore ? 'Загрузка...' : 'Загрузить ещё'}
+          </button>
+        </div>
       )}
 
       {voiceResult && (

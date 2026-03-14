@@ -56,8 +56,8 @@ export function Dashboard() {
   const fetchData = useCallback(async () => {
     const [summaryRes, txRes, remRes] = await Promise.all([
       statsApi.summary(),
-      transactionsApi.list({ limit: 5 }),
-      remindersApi.upcoming(7),
+      transactionsApi.list({ limit: 20 }),
+      remindersApi.upcoming(30),
     ]);
     const newSummary: StatsSummary = summaryRes.data;
     const newTransactions: Transaction[] = txRes.data.transactions;
@@ -67,7 +67,17 @@ export function Dashboard() {
     setRecentTransactions(newTransactions);
     setTransactions(newTransactions, txRes.data.total);
     setUpcomingReminders(newReminders);
-    writeCache({ summary: newSummary, transactions: newTransactions, reminders: newReminders });
+
+    // Only overwrite cached transactions if new data is non-empty,
+    // OR if total=0 meaning the user genuinely has no transactions.
+    // This prevents a sleeping Supabase from wiping the local cache.
+    const prevCache = readCache();
+    const safeTransactions =
+      newTransactions.length > 0 || txRes.data.total === 0
+        ? newTransactions
+        : (prevCache?.transactions ?? []);
+    writeCache({ summary: newSummary, transactions: safeTransactions, reminders: newReminders });
+    if (safeTransactions !== newTransactions) setRecentTransactions(safeTransactions);
   }, [setTransactions]);
 
   const loadData = useCallback(async (isManual = false) => {
