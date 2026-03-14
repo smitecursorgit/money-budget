@@ -51,7 +51,8 @@ app.use('/settings', settingsRouter);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
 
-app.listen(PORT, '127.0.0.1', () => {
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+app.listen(PORT, HOST, () => {
   console.log(`Backend running on port ${PORT}`);
   initBot();
   startCronJobs();

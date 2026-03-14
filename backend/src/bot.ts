@@ -11,7 +11,18 @@ export function initBot(): TelegramBot | null {
     return null;
   }
 
-  bot = new TelegramBot(token, { polling: true });
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (isProduction) {
+    // In production use webhook mode — no polling conflicts
+    bot = new TelegramBot(token, { polling: false });
+  } else {
+    // In development use polling for convenience
+    bot = new TelegramBot(token, { polling: true });
+    bot.on('polling_error', (err) => {
+      console.error('Bot polling error:', err.message);
+    });
+  }
 
   bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
@@ -29,11 +40,7 @@ export function initBot(): TelegramBot | null {
     });
   });
 
-  bot.on('polling_error', (err) => {
-    console.error('Bot polling error:', err.message);
-  });
-
-  console.log('Telegram bot started');
+  console.log(`Telegram bot started (${isProduction ? 'webhook' : 'polling'} mode)`);
   return bot;
 }
 
