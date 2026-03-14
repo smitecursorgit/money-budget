@@ -1,0 +1,77 @@
+import { Router, Request, Response } from 'express';
+import { z } from 'zod';
+import { authMiddleware } from '../middleware/auth';
+import { prisma } from '../lib/prisma';
+
+const router = Router();
+router.use(authMiddleware);
+
+const CategorySchema = z.object({
+  name: z.string().min(1).max(50),
+  type: z.enum(['income', 'expense']),
+  keywords: z.array(z.string()).default([]),
+  icon: z.string().default('💰'),
+  color: z.string().default('#6C63FF'),
+});
+
+router.get('/', async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.userId;
+  const categories = await prisma.category.findMany({
+    where: { userId },
+    orderBy: [{ type: 'asc' }, { name: 'asc' }],
+  });
+  res.json(categories);
+});
+
+router.post('/', async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.userId;
+  const parse = CategorySchema.safeParse(req.body);
+  if (!parse.success) {
+    res.status(400).json({ error: parse.error.flatten() });
+    return;
+  }
+
+  const category = await prisma.category.create({
+    data: { ...parse.data, userId },
+  });
+  res.status(201).json(category);
+});
+
+router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.userId;
+  const { id } = req.params;
+
+  const existing = await prisma.category.findFirst({ where: { id, userId } });
+  if (!existing) {
+    res.status(404).json({ error: 'Not found' });
+    return;
+  }
+
+  const parse = CategorySchema.partial().safeParse(req.body);
+  if (!parse.success) {
+    res.status(400).json({ error: parse.error.flatten() });
+    return;
+  }
+
+  const updated = await prisma.category.update({
+    where: { id },
+    data: parse.data,
+  });
+  res.json(updated);
+});
+
+router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+  const userId = req.user!.userId;
+  const { id } = req.params;
+
+  const existing = await prisma.category.findFirst({ where: { id, userId } });
+  if (!existing) {
+    res.status(404).json({ error: 'Not found' });
+    return;
+  }
+
+  await prisma.category.delete({ where: { id } });
+  res.status(204).send();
+});
+
+export default router;

@@ -1,0 +1,30 @@
+# Environment variables (secrets)
+.env
+.env.local
+.env.production
+
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build output
+dist/
+*/dist/
+build/
+
+# Prisma generated client
+node_modules/.prisma/
+
+# Temp files
+backend/tmp/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
