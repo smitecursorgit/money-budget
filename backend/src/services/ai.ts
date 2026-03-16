@@ -16,8 +16,8 @@ const ParsedEntrySchema = z.object({
 const ParsedEntriesSchema = z.array(ParsedEntrySchema).min(1).max(10);
 
 /** Извлекает краткую суть заметки: "Потратил 100 рублей на шоколадку" → "шоколадка" */
-function shortenNote(note: string | null | undefined): string | null | undefined {
-  if (!note || typeof note !== 'string') return note;
+function shortenNote(note: string | null | undefined): string | undefined {
+  if (!note || typeof note !== 'string') return undefined;
   let t = note.trim();
   // "Потратил X на Y" → Y
   const m1 = t.match(/^потратил\s+.+?\s+на\s+(.+)$/i);
@@ -30,7 +30,7 @@ function shortenNote(note: string | null | undefined): string | null | undefined
   }
   // Убираем суффиксы "за 500", "500 р", "100 рублей" в конце
   t = t.replace(/\s+за\s+\d+[\sрруб.]*$/i, '').replace(/\s+\d+[\sрруб.]*$/i, '').trim();
-  return t || note;
+  return t || undefined;
 }
 
 // Groq uses OpenAI-compatible API — only baseURL and models differ.
@@ -190,7 +190,8 @@ ${categoryList || 'Нет пользовательских категорий �
     const validated = ParsedEntriesSchema.parse(normalized) as ParsedEntry[];
     // Постобработка: сокращаем заметки вида "Потратил X на Y" → "Y"
     validated.forEach((e) => {
-      if (e.note) e.note = shortenNote(e.note);
+      const shortened = shortenNote(e.note);
+      e.note = shortened ?? undefined;
     });
     return validated;
   } catch {
