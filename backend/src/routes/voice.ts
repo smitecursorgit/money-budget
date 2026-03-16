@@ -104,15 +104,26 @@ router.post('/parse', authMiddleware, uploadSingle, async (req: Request, res: Re
     res.json({ transcription: transcribedText, parsed });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Voice parse error:', message);
+    const code = (err as { code?: string }).code;
+    const status = (err as { status?: number }).status;
+    console.error('Voice parse error:', message, { code, status });
 
     let userError: string;
-    if (message.includes('API key') || message.includes('401') || message.includes('Unauthorized')) {
+    if (status === 503 || message.includes('503') || message.toLowerCase().includes('service unavailable')) {
+      userError = 'Сервис распознавания речи временно перегружен. Попробуйте через минуту.';
+    } else if (status === 429 || message.includes('429') || message.toLowerCase().includes('rate limit')) {
+      userError = 'Слишком много запросов к распознаванию. Подождите минуту.';
+    } else if (message.includes('API key') || message.includes('401') || message.includes('Unauthorized')) {
       userError = 'GROQ_API_KEY не настроен или неверный на сервере';
     } else if (message.includes('could not process file') || message.includes('Invalid file')) {
       userError = 'Не удалось распознать аудио. Говорите чётче и ближе к микрофону.';
-    } else if (message.includes('prisma') || message.includes('prepared statement') || message.includes('ConnectorError') || message.includes('P1') || message.includes('P2')) {
-      userError = 'Сервис временно недоступен. Попробуйте ещё раз.';
+    } else if (
+      (typeof code === 'string' && (code.startsWith('P1') || code.startsWith('P2'))) ||
+      message.includes('prisma') ||
+      message.includes('ConnectorError') ||
+      message.includes('prepared statement')
+    ) {
+      userError = 'База данных временно недоступна. Попробуйте ещё раз.';
     } else if (message.includes('timeout') || message.includes('ETIMEDOUT') || message.includes('ECONNREFUSED')) {
       userError = 'Сервер не отвечает. Проверьте соединение.';
     } else {

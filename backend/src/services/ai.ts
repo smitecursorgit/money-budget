@@ -47,13 +47,32 @@ function getGroqClient(): OpenAI {
   return _groq;
 }
 
-export async function transcribeAudio(filePath: string): Promise<string> {
+async function transcribeWithRetry(filePath: string, attempt = 1): Promise<string> {
   const transcription = await getGroqClient().audio.transcriptions.create({
     file: fs.createReadStream(filePath),
     model: 'whisper-large-v3',
     language: 'ru',
   });
   return transcription.text;
+}
+
+export async function transcribeAudio(filePath: string): Promise<string> {
+  const maxAttempts = 2;
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await transcribeWithRetry(filePath, attempt);
+    } catch (err) {
+      lastErr = err;
+      const status = (err as { status?: number }).status;
+      if (attempt < maxAttempts && (status === 503 || status === 429)) {
+        await new Promise((r) => setTimeout(r, 2000 * attempt));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
 }
 
 const SYSTEM_PROMPT = `Ты — AI-ассистент для учёта личных финансов. Разбери команду на русском (включая слэнг и разговорную речь) и верни ТОЛЬКО валидный JSON без markdown, пояснений и комментариев.
