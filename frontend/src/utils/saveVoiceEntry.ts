@@ -32,7 +32,7 @@ function findCategory(categories: Category[], aiCategoryName: string | undefined
   return undefined;
 }
 
-export async function saveVoiceEntry(entry: ParsedEntry, categories: Category[]): Promise<void> {
+export async function saveVoiceEntry(entry: ParsedEntry, categories: Category[]): Promise<unknown | void> {
   if (entry.type === 'reminder') {
     await remindersApi.create({
       title: entry.reminderTitle || entry.note || 'Напоминание',
@@ -40,7 +40,7 @@ export async function saveVoiceEntry(entry: ParsedEntry, categories: Category[])
       recurrence: entry.reminderRecurrence || 'once',
       nextDate: entry.date || new Date().toISOString().slice(0, 10),
     });
-    return;
+    return null;
   }
 
   if (!entry.amount || entry.amount <= 0) {
@@ -49,11 +49,12 @@ export async function saveVoiceEntry(entry: ParsedEntry, categories: Category[])
 
   const matchedCategory = findCategory(categories, entry.category, entry.type);
 
-  await transactionsApi.create({
+  const { data } = await transactionsApi.create({
     amount: entry.amount,
     type: entry.type,
     categoryId: matchedCategory?.id,
     date: entry.date,
     note: entry.note,
   });
+  return data as { id: string; amount: number; type: string; categoryId: string | null; category: unknown; date: string; note: string | null; createdAt: string };
 }

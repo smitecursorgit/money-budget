@@ -156,6 +156,36 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Fix: prevent white/light background on hover in dark theme */
+html {
+  color-scheme: dark;
+}
+button:hover:not(:disabled):not([data-variant="primary"]):not(.nav-tab-btn) {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+}
+button:focus, button:focus-visible {
+  outline: none;
+}
+/* BottomNav + links: no white on hover/focus */
+button.nav-tab-btn:hover, button.nav-tab-btn:focus, button.nav-tab-btn:active {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+a:hover, a:focus, a:active {
+  background-color: transparent !important;
+}
+
+/* Recharts tooltip — dark theme (overrides default white) */
+.recharts-default-tooltip {
+  background: rgba(8, 8, 8, 0.98) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 12px;
+  color: #f0f0f5 !important;
+  padding: 10px 14px !important;
 }
 
 /* ── Section label ── */

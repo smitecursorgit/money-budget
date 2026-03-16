@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button.tsx';
 import { VoiceButton } from '../components/VoiceButton.tsx';
 import { VoiceConfirmModal } from '../components/VoiceConfirmModal.tsx';
 import { transactionsApi } from '../api/client.ts';
-import { useAppStore, useTransactionStore } from '../store/index.ts';
+import { useAppStore, useTransactionStore, useStatsStore } from '../store/index.ts';
 import { Category, Transaction, ParsedEntry } from '../types/index.ts';
 import { saveVoiceEntry } from '../utils/saveVoiceEntry.ts';
 
@@ -22,7 +22,8 @@ const PAGE_SIZE = 50;
 export function Transactions() {
   const location = useLocation();
   const { user, categories } = useAppStore();
-  const { transactions, total, setTransactions, removeTransaction } = useTransactionStore();
+  const { transactions, total, setTransactions, removeTransaction, addTransaction, updateTransaction } = useTransactionStore();
+  const invalidateStats = useStatsStore((s) => s.invalidateStats);
   const [filterType, setFilterType] = useState('');
   const [search, setSearch] = useState('');
   const [showVoice, setShowVoice] = useState(false);
@@ -83,6 +84,7 @@ export function Transactions() {
 
   const handleDelete = async (id: string) => {
     removeTransaction(id);
+    invalidateStats();
     try {
       await transactionsApi.remove(id);
     } catch {
@@ -92,6 +94,7 @@ export function Transactions() {
 
   const handleVoiceConfirm = async (entries: ParsedEntry[]) => {
     await Promise.allSettled(entries.map((entry) => saveVoiceEntry(entry, categories)));
+    invalidateStats();
     await load();
   };
 
@@ -268,7 +271,12 @@ export function Transactions() {
             key="add"
             categories={categories}
             onClose={() => setShowAddForm(false)}
-            onSaved={load}
+            onSaved={(tx?: Transaction) => {
+              if (tx) addTransaction(tx);
+              invalidateStats();
+              setShowAddForm(false);
+              load();
+            }}
           />
         )}
         {editTarget && (
@@ -277,7 +285,12 @@ export function Transactions() {
             transaction={editTarget}
             categories={categories}
             onClose={() => setEditTarget(null)}
-            onSaved={load}
+            onSaved={(tx?: Transaction) => {
+              if (tx) updateTransaction(tx);
+              invalidateStats();
+              setEditTarget(null);
+              load();
+            }}
           />
         )}
       </AnimatePresence>
@@ -529,7 +542,7 @@ function TransactionFormModal({
   );
 }
 
-function AddTransactionModal({ categories, onClose, onSaved }: { categories: Category[]; onClose: () => void; onSaved: () => void }) {
+function AddTransactionModal({ categories, onClose, onSaved }: { categories: Category[]; onClose: () => void; onSaved: (tx?: Transaction) => void }) {
   return (
     <TransactionFormModal
       title="Новая операция"
@@ -537,14 +550,14 @@ function AddTransactionModal({ categories, onClose, onSaved }: { categories: Cat
       categories={categories}
       onClose={onClose}
       onSubmit={async (data) => {
-        await transactionsApi.create(data);
-        onSaved();
+        const { data: created } = await transactionsApi.create(data);
+        onSaved(created);
       }}
     />
   );
 }
 
-function EditTransactionModal({ transaction: t, categories, onClose, onSaved }: { transaction: Transaction; categories: Category[]; onClose: () => void; onSaved: () => void }) {
+function EditTransactionModal({ transaction: t, categories, onClose, onSaved }: { transaction: Transaction; categories: Category[]; onClose: () => void; onSaved: (tx?: Transaction) => void }) {
   return (
     <TransactionFormModal
       title="Редактировать операцию"
@@ -558,8 +571,8 @@ function EditTransactionModal({ transaction: t, categories, onClose, onSaved }: 
       categories={categories}
       onClose={onClose}
       onSubmit={async (data) => {
-        await transactionsApi.update(t.id, data);
-        onSaved();
+        const { data: updated } = await transactionsApi.update(t.id, data);
+        onSaved(updated);
       }}
     />
   );

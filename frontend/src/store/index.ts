@@ -63,7 +63,18 @@ export const useTransactionStore = create<TransactionState>((set) => ({
   removeTransaction: (id) =>
     set((s) => ({ transactions: s.transactions.filter((t) => t.id !== id), total: s.total - 1 })),
   updateTransaction: (updated) =>
-    set((s) => ({
-      transactions: s.transactions.map((t) => (t.id === updated.id ? updated : t)),
-    })),
+    set((s) => {
+      const filtered = s.transactions.filter((t) => t.id !== updated.id);
+      return { transactions: [updated, ...filtered] };
+    }),
+}));
+
+interface StatsState {
+  invalidatedAt: number;
+  invalidateStats: () => void;
+}
+
+export const useStatsStore = create<StatsState>((set) => ({
+  invalidatedAt: 0,
+  invalidateStats: () => set((s) => ({ invalidatedAt: Date.now() })),
 }));

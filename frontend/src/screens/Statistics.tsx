@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart,
@@ -12,8 +12,9 @@ import {
   Cell,
 } from 'recharts';
 import { Card } from '../components/ui/Card.tsx';
+import { useLocation } from 'react-router-dom';
 import { statsApi } from '../api/client.ts';
-import { useAppStore } from '../store/index.ts';
+import { useAppStore, useStatsStore } from '../store/index.ts';
 import { CategoryStat, MonthlyStat, StatsSummary } from '../types/index.ts';
 
 type Period = 'month' | 'quarter' | 'year';
@@ -28,6 +29,8 @@ function formatYAxis(v: number): string {
 
 export function Statistics() {
   const { user } = useAppStore();
+  const invalidatedAt = useStatsStore((s) => s.invalidatedAt);
+  const location = useLocation();
   const [period, setPeriod] = useState<Period>('month');
   const [chartTab, setChartTab] = useState<ChartTab>('bar');
   const [summary, setSummary] = useState<StatsSummary | null>(null);
@@ -43,16 +46,22 @@ export function Statistics() {
 
   const getDateRange = useCallback(() => {
     const now = new Date();
-    const to = now.toISOString().slice(0, 10);
     let from: string;
+    let to: string;
     if (period === 'month') {
       from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+      const endExclusive = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      to = endExclusive.toISOString().slice(0, 10);
     } else if (period === 'quarter') {
       const d = new Date(now);
       d.setMonth(d.getMonth() - 3);
       from = d.toISOString().slice(0, 10);
+      const endExclusive = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      to = endExclusive.toISOString().slice(0, 10);
     } else {
       from = new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10);
+      const endExclusive = new Date(now.getFullYear() + 1, 0, 1);
+      to = endExclusive.toISOString().slice(0, 10);
     }
     return { from, to };
   }, [period]);
@@ -93,23 +102,15 @@ export function Statistics() {
     }
   }, [period, chartTab, getDateRange]);
 
-  // Keep track of prev period to avoid double-fetching category stats on mount
-  const prevPeriodRef = useRef(period);
+  // Refetch when transactions change (real-time), when navigating to stats, or when period changes
   useEffect(() => {
     loadBase();
-    if (chartTab !== 'bar') {
-      loadCategoryStats();
-    }
-    prevPeriodRef.current = period;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period]);
+    if (chartTab !== 'bar') loadCategoryStats();
+  }, [invalidatedAt, location.pathname, period]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (chartTab !== 'bar') {
-      loadCategoryStats();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartTab]);
+    if (chartTab !== 'bar') loadCategoryStats();
+  }, [chartTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const periods: { label: string; value: Period }[] = [
     { label: 'Месяц', value: 'month' },
@@ -223,6 +224,7 @@ export function Statistics() {
                           borderRadius: '12px',
                           color: '#f0f0f5',
                         }}
+                        wrapperStyle={{ background: 'transparent', border: 'none' }}
                         formatter={(value: number) => [fmt(value), '']}
                       />
                       <Bar dataKey="income" fill="#22c55e" radius={[6, 6, 0, 0]} name="Доход" />
@@ -261,6 +263,7 @@ export function Statistics() {
                           borderRadius: '12px',
                           color: '#f0f0f5',
                         }}
+                        wrapperStyle={{ background: 'transparent', border: 'none' }}
                         formatter={(value: number) => [fmt(value), '']}
                       />
                     </PieChart>

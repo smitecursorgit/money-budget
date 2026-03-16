@@ -40,6 +40,8 @@ export function BottomNav() {
         return (
           <button
             key={path}
+            type="button"
+            className="nav-tab-btn"
             onClick={() => navigate(path)}
             style={{
               flex: 1,

@@ -62,6 +62,7 @@ export function Button({
   return (
     <motion.button
       type={type}
+      data-variant={variant}
       onClick={onClick}
       disabled={disabled || loading}
       whileTap={{ scale: 0.96 }}

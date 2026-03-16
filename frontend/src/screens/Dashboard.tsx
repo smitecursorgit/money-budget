@@ -7,7 +7,7 @@ import { Card } from '../components/ui/Card.tsx';
 import { VoiceButton } from '../components/VoiceButton.tsx';
 import { VoiceConfirmModal } from '../components/VoiceConfirmModal.tsx';
 import { statsApi, transactionsApi, remindersApi } from '../api/client.ts';
-import { useAppStore, useTransactionStore } from '../store/index.ts';
+import { useAppStore, useTransactionStore, useStatsStore } from '../store/index.ts';
 import { ParsedEntry, StatsSummary, Reminder, Transaction } from '../types/index.ts';
 import { saveVoiceEntry } from '../utils/saveVoiceEntry.ts';
 
@@ -38,13 +38,14 @@ function writeCache(data: { summary: StatsSummary; transactions: Transaction[]; 
 
 export function Dashboard() {
   const { user, categories } = useAppStore();
-  const { setTransactions } = useTransactionStore();
+  const { transactions, setTransactions, addTransaction } = useTransactionStore();
+  const invalidateStats = useStatsStore((s) => s.invalidateStats);
   const navigate = useNavigate();
 
   const cachedRef = useRef(readCache());
   const [summary, setSummary] = useState<StatsSummary | null>(cachedRef.current?.summary ?? null);
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(cachedRef.current?.transactions ?? []);
   const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>(cachedRef.current?.reminders ?? []);
+  const recentTransactions = transactions.slice(0, 20);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry[] } | null>(null);
   const [detailTransaction, setDetailTransaction] = useState<Transaction | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,17 +72,14 @@ export function Dashboard() {
     const newReminders: Reminder[] = remRes.data.slice(0, 3);
 
     setSummary(newSummary);
-    setRecentTransactions(newTransactions);
-    setTransactions(newTransactions, txRes.data.total);
-    setUpcomingReminders(newReminders);
-
     const prevCache = readCache();
     const safeTransactions =
       newTransactions.length > 0 || txRes.data.total === 0
         ? newTransactions
         : (prevCache?.transactions ?? []);
+    setTransactions(safeTransactions, txRes.data.total);
+    setUpcomingReminders(newReminders);
     writeCache({ summary: newSummary, transactions: safeTransactions, reminders: newReminders });
-    if (safeTransactions !== newTransactions) setRecentTransactions(safeTransactions);
   }, [setTransactions]);
 
   const loadData = useCallback(async (isManual = false) => {
@@ -116,7 +114,13 @@ export function Dashboard() {
   }, [loadData]);
 
   const handleVoiceConfirm = async (entries: ParsedEntry[]) => {
-    await Promise.allSettled(entries.map((entry) => saveVoiceEntry(entry, categories)));
+    const results = await Promise.allSettled(entries.map((entry) => saveVoiceEntry(entry, categories)));
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value && typeof r.value === 'object' && 'id' in r.value) {
+        addTransaction(r.value as Transaction);
+      }
+    }
+    invalidateStats();
     fetchData().catch(() => {});
   };
 
@@ -644,12 +648,22 @@ function TransactionRow({
           >
             {icon}
           </div>
-          <div>
-            <p style={{ fontWeight: 500, fontSize: '14px' }}>
-              {t.category?.name || t.note || 'Без категории'}
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontWeight: 500, fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {t.category?.name || 'Без категории'}
             </p>
-            <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '1px' }}>
-              {new Date(t.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' })}
+            <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {t.note ? (
+                t.note
+              ) : (
+                <>
+                  <span style={{ color: t.type === 'income' ? 'var(--income)' : 'var(--expense)', fontWeight: 500 }}>
+                    {t.type === 'income' ? 'Доход' : 'Расход'}
+                  </span>
+                  {' · '}
+                  {new Date(t.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' })}
+                </>
+              )}
             </p>
           </div>
         </div>

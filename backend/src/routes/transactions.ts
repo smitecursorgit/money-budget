@@ -37,7 +37,7 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       prisma.transaction.findMany({
         where,
         include: { category: true },
-        orderBy: { date: 'desc' },
+        orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
         take: Number(limit),
         skip: Number(offset),
       }),
