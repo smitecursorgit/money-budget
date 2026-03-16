@@ -18,8 +18,8 @@ export function AuthScreen() {
         try {
           WebApp.ready();
           WebApp.expand();
-          WebApp.setHeaderColor('#09090f');
-          WebApp.setBackgroundColor('#09090f');
+          WebApp.setHeaderColor('#000000');
+          WebApp.setBackgroundColor('#000000');
         } catch {
           // Running in a regular browser — ignore Telegram SDK errors
         }
@@ -64,20 +64,6 @@ export function AuthScreen() {
         overflow: 'hidden',
       }}
     >
-      {/* Ambient orbs */}
-      <div style={{
-        position: 'absolute', top: '-20%', right: '-20%',
-        width: '70vw', height: '70vw', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(34,197,94,0.14) 0%, transparent 65%)',
-        pointerEvents: 'none',
-      }} />
-      <div style={{
-        position: 'absolute', bottom: '-10%', left: '-20%',
-        width: '55vw', height: '55vw', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 65%)',
-        pointerEvents: 'none',
-      }} />
-
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.div
@@ -97,9 +83,8 @@ export function AuthScreen() {
                   position: 'absolute',
                   inset: 0,
                   borderRadius: '50%',
-                  border: '2.5px solid rgba(34,197,94,0.14)',
+                  border: '2.5px solid rgba(34,197,94,0.2)',
                   borderTopColor: '#22c55e',
-                  borderRightColor: '#2dd96b',
                 }}
               />
               <div style={{
@@ -158,13 +143,13 @@ export function AuthScreen() {
               style={{
                 padding: '12px 28px',
                 borderRadius: 'var(--radius-pill)',
-              background: 'linear-gradient(135deg, #1eaa4f, #22c55e)',
+              background: '#22c55e',
               color: '#fff',
-              border: '1px solid rgba(45,217,107,0.28)',
+              border: 'none',
               fontSize: '15px',
               fontWeight: 600,
               cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(34,197,94,0.30), 0 1px 0 rgba(255,255,255,0.20) inset',
+              boxShadow: '0 1px 0 rgba(255,255,255,0.12) inset',
               }}
             >
               Попробовать снова

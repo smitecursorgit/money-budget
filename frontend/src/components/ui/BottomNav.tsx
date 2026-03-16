@@ -23,12 +23,12 @@ export function BottomNav() {
         left: '14px',
         right: '14px',
         height: '64px',
-        background: 'rgba(8, 8, 8, 0.52)',
+        background: 'rgba(8, 8, 8, 0.55)',
         backdropFilter: 'blur(64px) saturate(180%)',
         WebkitBackdropFilter: 'blur(64px) saturate(180%)',
         borderRadius: 'var(--radius-pill)',
         border: '1px solid rgba(255,255,255,0.09)',
-        boxShadow: '0 1px 0 rgba(255,255,255,0.09) inset, 0 16px 48px rgba(0,0,0,0.55)',
+        boxShadow: '0 -16px 48px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.09) inset',
         display: 'flex',
         alignItems: 'center',
         padding: '0 8px',
@@ -65,7 +65,7 @@ export function BottomNav() {
                   borderRadius: '22px',
                   background: 'var(--accent-dim)',
                   border: '1px solid rgba(34,197,94,0.28)',
-                  boxShadow: '0 0 12px var(--accent-glow)',
+                  boxShadow: '0 0 16px var(--accent-glow), 0 1px 0 rgba(255,255,255,0.06) inset',
                 }}
                 transition={{ type: 'spring', stiffness: 380, damping: 32 }}
               />

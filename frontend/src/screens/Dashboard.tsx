@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, ChevronRight, RefreshCw, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronRight, RefreshCw, Plus, X, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
 import { VoiceButton } from '../components/VoiceButton.tsx';
@@ -45,6 +45,7 @@ export function Dashboard() {
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(cachedRef.current?.transactions ?? []);
   const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>(cachedRef.current?.reminders ?? []);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry[] } | null>(null);
+  const [detailTransaction, setDetailTransaction] = useState<Transaction | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -210,31 +211,17 @@ export function Dashboard() {
       >
         <div
           style={{
-            background: 'linear-gradient(145deg, rgba(34,197,94,0.14) 0%, rgba(34,197,94,0.05) 50%, rgba(0,0,0,0) 100%)',
-            border: '1px solid rgba(34,197,94,0.20)',
+            background: 'rgba(18,18,18,0.95)',
+            border: '1px solid rgba(255,255,255,0.08)',
             borderRadius: 'var(--radius-xl)',
             padding: '24px',
             position: 'relative',
             overflow: 'hidden',
             backdropFilter: 'blur(40px)',
             WebkitBackdropFilter: 'blur(40px)',
-            boxShadow: '0 1px 0 rgba(255,255,255,0.10) inset, 0 12px 40px rgba(0,0,0,0.35)',
+            boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset',
           }}
         >
-          {/* Subtle glow blob inside the card */}
-          <div
-            style={{
-              position: 'absolute',
-              top: -50,
-              right: -30,
-              width: 160,
-              height: 160,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(34,197,94,0.16) 0%, transparent 70%)',
-              pointerEvents: 'none',
-            }}
-          />
-
           {refreshing && (
             <motion.div
               animate={{ rotate: 360 }}
@@ -425,7 +412,12 @@ export function Dashboard() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {recentTransactions.map((t) => (
-              <TransactionRow key={t.id} transaction={t} fmt={fmt} />
+              <TransactionRow
+                key={t.id}
+                transaction={t}
+                fmt={fmt}
+                onClick={() => setDetailTransaction(t)}
+              />
             ))}
           </div>
         )}
@@ -440,16 +432,187 @@ export function Dashboard() {
           onClose={() => setVoiceResult(null)}
         />
       )}
+
+      {detailTransaction && (
+        <TransactionDetailModal
+          transaction={detailTransaction}
+          fmt={fmt}
+          onClose={() => setDetailTransaction(null)}
+          onEdit={() => {
+            setDetailTransaction(null);
+            navigate('/transactions', { state: { editId: detailTransaction.id } });
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function TransactionRow({ transaction: t, fmt }: { transaction: Transaction; fmt: (n: number) => string }) {
+function TransactionDetailModal({
+  transaction: t,
+  fmt,
+  onClose,
+  onEdit,
+}: {
+  transaction: Transaction;
+  fmt: (n: number) => string;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const icon = t.category?.icon || '📦';
+  const color = t.category?.color || '#71717a';
+  const isIncome = t.type === 'income';
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          zIndex: 200,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          padding: '0 14px calc(16px + var(--nav-height) + var(--safe-bottom))',
+        }}
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ y: 60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 60, opacity: 0 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: '100%',
+            maxWidth: 420,
+            maxHeight: '75vh',
+            background: 'var(--glass-bg)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: 'var(--radius-panel)',
+            padding: '20px',
+            backdropFilter: 'blur(40px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+            overflow: 'hidden',
+            boxShadow: '0 1px 0 var(--glass-shine) inset, 0 24px 48px rgba(0,0,0,0.4)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ fontWeight: 700, fontSize: '18px' }}>Операция</h3>
+            <button onClick={onClose} style={{ background: 'none', padding: '6px', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
+              <X size={22} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 'var(--radius-md)',
+                  background: `${color}22`,
+                  border: `1px solid ${color}44`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '24px',
+                  flexShrink: 0,
+                }}
+              >
+                {icon}
+              </div>
+              <div>
+                <p style={{ fontWeight: 600, fontSize: '16px' }}>
+                  {t.category?.name || 'Без категории'}
+                </p>
+                <p style={{ fontSize: '28px', fontWeight: 800, color: isIncome ? 'var(--income)' : 'var(--expense)', letterSpacing: '-0.02em' }}>
+                  {isIncome ? '+' : '-'}{fmt(Number(t.amount))}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <DetailRow label="Дата" value={new Date(t.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })} />
+              {t.note && <DetailRow label="Заметка" value={t.note} />}
+              <DetailRow label="Тип" value={isIncome ? 'Доход' : 'Расход'} />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+            <button
+              onClick={onClose}
+              style={{
+                flex: 1,
+                padding: '14px',
+                borderRadius: 'var(--radius-panel)',
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'var(--text-primary)',
+                fontSize: '15px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Закрыть
+            </button>
+            <button
+              onClick={onEdit}
+              style={{
+                flex: 1,
+                padding: '14px',
+                borderRadius: 'var(--radius-panel)',
+                background: 'var(--accent-dim)',
+                border: '1px solid rgba(34,197,94,0.3)',
+                color: 'var(--accent)',
+                fontSize: '15px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+              }}
+            >
+              <Pencil size={16} />
+              Редактировать
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontSize: '15px', color: 'var(--text-primary)', lineHeight: 1.4 }}>{value}</span>
+    </div>
+  );
+}
+
+function TransactionRow({
+  transaction: t,
+  fmt,
+  onClick,
+}: {
+  transaction: Transaction;
+  fmt: (n: number) => string;
+  onClick: () => void;
+}) {
   const icon = t.category?.icon || '📦';
   const color = t.category?.color || '#71717a';
 
   return (
-    <Card padding="md">
+    <Card padding="md" onClick={onClick}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div

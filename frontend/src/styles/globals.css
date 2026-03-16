@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap');
 
 :root {
-  /* Backgrounds — pure black */
-  --bg-primary: #080808;
-  --bg-secondary: #0f0f0f;
+  /* Backgrounds — strict premium black */
+  --bg-primary: #000000;
+  --bg-secondary: #0c0c0c;
 
   /* Glass surfaces */
   --glass-bg: rgba(255, 255, 255, 0.06);
@@ -90,7 +90,7 @@ body {
   flex-direction: column;
 }
 
-/* Page extends full height — content scrolls UNDER the bottom nav */
+/* Page — content scrolls under nav */
 .page {
   position: absolute;
   top: 0;
@@ -104,7 +104,6 @@ body {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overscroll-behavior-y: contain;
-  /* iOS Safari: ensure scroll works with dynamic viewport */
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
 }

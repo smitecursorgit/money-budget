@@ -16,10 +16,10 @@ interface ButtonProps {
 
 const variants = {
   primary: {
-    background: 'linear-gradient(135deg, #1eaa4f 0%, #22c55e 50%, #2dd96b 100%)',
+    background: '#22c55e',
     color: '#fff',
-    border: '1px solid rgba(45,217,107,0.28)',
-    boxShadow: '0 1px 0 rgba(255,255,255,0.20) inset, 0 4px 18px rgba(34,197,94,0.30)',
+    border: 'none',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.12) inset',
   },
   secondary: {
     background: 'rgba(255,255,255,0.07)',

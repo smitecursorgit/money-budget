@@ -103,9 +103,7 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
   const isRecording = state === 'recording';
   const isProcessing = state === 'processing';
 
-  const buttonBg = isRecording
-    ? 'linear-gradient(135deg, #e63930 0%, #f55a2e 100%)'
-    : 'linear-gradient(135deg, #1eaa4f 0%, #22c55e 50%, #2dd96b 100%)';
+  const buttonBg = isRecording ? '#e63930' : '#22c55e';
 
   const buttonShadow = isRecording
     ? '0 0 0 0px rgba(255,69,58,0.4), 0 8px 32px rgba(255,69,58,0.30), 0 1px 0 rgba(255,255,255,0.22) inset'

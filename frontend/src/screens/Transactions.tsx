@@ -72,6 +72,15 @@ export function Transactions() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Open edit modal when navigated from Dashboard with editId
+  useEffect(() => {
+    const editId = (location.state as { editId?: string })?.editId;
+    if (editId && transactions.length > 0) {
+      const tx = transactions.find((t) => t.id === editId);
+      if (tx) setEditTarget(tx);
+    }
+  }, [location.state, transactions]);
+
   const handleDelete = async (id: string) => {
     removeTransaction(id);
     try {
