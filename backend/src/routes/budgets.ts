@@ -53,9 +53,21 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     res.status(201).json(budget);
-  } catch (err) {
-    console.error('Budget create error:', err);
-    res.status(500).json({ error: 'Не удалось создать профиль' });
+  } catch (err: unknown) {
+    const prismaErr = err as { code?: string; meta?: { target?: string[] }; message?: string };
+    console.error('Budget create error:', {
+      code: prismaErr.code,
+      message: prismaErr.message,
+      meta: prismaErr.meta,
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    let msg = 'Не удалось создать профиль.';
+    if (prismaErr.code === 'P2002') msg = 'Профиль с таким именем уже существует.';
+    else if (prismaErr.code === 'P2003') msg = 'Ошибка базы данных. Проверьте подключение.';
+    else if (prismaErr.message?.includes('connection') || prismaErr.message?.includes('timeout')) {
+      msg = 'Сервер базы данных не отвечает. Попробуйте через минуту.';
+    }
+    res.status(500).json({ error: msg });
   }
 });
 
