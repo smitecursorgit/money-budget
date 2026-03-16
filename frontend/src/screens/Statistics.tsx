@@ -81,11 +81,13 @@ export function Statistics() {
         setSummary(sumRes.data);
         setMonthly(monRes.data);
       } catch (e) {
-        if (retries > 0 && (!(e as { response?: { status: number } }).response || (e as { response?: { status: number } }).response?.status !== 401)) {
+        const err = e as { response?: { status: number; data?: { error?: string } }; message?: string };
+        if (retries > 0 && (!err.response || err.response?.status !== 401)) {
           await new Promise((r) => setTimeout(r, 3000));
           return fetchWithRetry(retries - 1);
         }
-        setError('Не удалось загрузить статистику');
+        const msg = err.response?.data?.error || err.message || 'Не удалось загрузить статистику';
+        setError(msg);
       } finally {
         setLoading(false);
       }
@@ -165,7 +167,22 @@ export function Statistics() {
         </div>
       ) : error ? (
         <Card padding="lg" style={{ textAlign: 'center', marginBottom: '16px' }}>
-          <p style={{ color: 'var(--expense)' }}>{error}</p>
+          <p style={{ color: 'var(--expense)', marginBottom: '12px' }}>{error}</p>
+          <button
+            onClick={() => loadBase()}
+            style={{
+              padding: '10px 20px',
+              borderRadius: 'var(--radius-pill)',
+              background: 'var(--accent-dim)',
+              border: '1px solid rgba(34,197,94,0.28)',
+              color: 'var(--accent)',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Повторить
+          </button>
         </Card>
       ) : (
         <>
