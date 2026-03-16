@@ -75,11 +75,18 @@ app.use((req, _res, next) => {
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-// Rate limiters (disabled in development to avoid false triggers during hot-reloads)
+function skipRateLimit(req: express.Request): boolean {
+  if (isDev) return true;
+  const origin = req.headers.origin || '';
+  if (/^https?:\/\/localhost(:\d+)?$|^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) return true;
+  return false;
+}
+
+// Rate limiters: в dev отключены; с localhost (dev против prod) — тоже пропускаем
 const authLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 20,
-  skip: () => isDev,
+  max: 60,
+  skip: (req) => skipRateLimit(req),
   message: { error: 'Слишком много запросов. Попробуйте через 10 минут.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -87,8 +94,8 @@ const authLimiter = rateLimit({
 
 const voiceLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
-  skip: () => isDev,
+  max: 15,
+  skip: (req) => skipRateLimit(req),
   message: { error: 'Слишком много голосовых запросов. Подождите минуту.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -97,9 +104,9 @@ const voiceLimiter = rateLimit({
 const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-app.use('/auth', ...(isDev ? [] : [authLimiter]), authRouter);
+app.use('/auth', authLimiter, authRouter);
 app.use('/budgets', budgetsRouter);
-app.use('/voice', ...(isDev ? [] : [voiceLimiter]), voiceRouter);
+app.use('/voice', voiceLimiter, voiceRouter);
 app.use('/transactions', transactionsRouter);
 app.use('/categories', categoriesRouter);
 app.use('/stats', statsRouter);

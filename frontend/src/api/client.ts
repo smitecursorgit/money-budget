@@ -43,6 +43,13 @@ api.interceptors.response.use(
       return Promise.reject(err);
     }
 
+    // 429 — rate limit, pass through server message, don't logout
+    if (err.response?.status === 429) {
+      const msg = err.response?.data?.error;
+      if (msg) err.message = msg;
+      return Promise.reject(err);
+    }
+
     // Normalize network / timeout errors to human-readable Russian messages
     if (!err.response) {
       if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
