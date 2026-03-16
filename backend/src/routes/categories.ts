@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
-import { prisma } from '../lib/prisma';
+import { prisma, withRetry } from '../lib/prisma';
 import { getBudgetId } from '../lib/budget';
 
 const router = Router();

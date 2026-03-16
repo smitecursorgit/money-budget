@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { authMiddleware } from '../middleware/auth';
 import { transcribeAudio, parseFinanceText } from '../services/ai';
-import { prisma } from '../lib/prisma';
+import { prisma, withRetry } from '../lib/prisma';
 import { getBudgetId } from '../lib/budget';
 
 /**
@@ -92,12 +92,10 @@ router.post('/parse', authMiddleware, uploadSingle, async (req: Request, res: Re
   try {
     const budgetId = await getBudgetId(userId);
     const catWhere = budgetId ? { OR: [{ budgetId }, { userId, budgetId: null }] } : { userId };
-    const categories = await prisma.category.findMany({
-      where: catWhere,
-      select: { name: true, type: true, keywords: true },
-    });
-
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const [categories, user] = await withRetry(() => Promise.all([
+      prisma.category.findMany({ where: catWhere, select: { name: true, type: true, keywords: true } }),
+      prisma.user.findUnique({ where: { id: userId } }),
+    ]));
     const today = new Date().toLocaleDateString('sv', { timeZone: user?.timezone || 'Europe/Moscow' });
 
     const transcribedText = await transcribeAudio(filePath);
@@ -144,10 +142,10 @@ router.post('/parse-text', authMiddleware, async (req: Request, res: Response): 
   try {
     const budgetId = await getBudgetId(userId);
     const catWhere = budgetId ? { OR: [{ budgetId }, { userId, budgetId: null }] } : { userId };
-    const [categories, user] = await Promise.all([
+    const [categories, user] = await withRetry(() => Promise.all([
       prisma.category.findMany({ where: catWhere, select: { name: true, type: true, keywords: true } }),
       prisma.user.findUnique({ where: { id: userId } }),
-    ]);
+    ]));
 
     const today = new Date().toLocaleDateString('sv', { timeZone: user?.timezone || 'Europe/Moscow' });
     const parsed = await parseFinanceText(text, categories, today);

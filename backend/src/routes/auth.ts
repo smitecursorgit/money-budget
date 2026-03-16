@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { prisma } from '../lib/prisma';
+import { prisma, withRetry } from '../lib/prisma';
 import { verifyTelegramInitData } from '../middleware/auth';
 import { migrateUserToBudgets, getBudgetId } from '../lib/budget';
 
