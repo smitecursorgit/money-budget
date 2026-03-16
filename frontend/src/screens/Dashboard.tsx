@@ -39,7 +39,7 @@ export function Dashboard() {
   const [summary, setSummary] = useState<StatsSummary | null>(cachedRef.current?.summary ?? null);
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(cachedRef.current?.transactions ?? []);
   const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>(cachedRef.current?.reminders ?? []);
-  const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry } | null>(null);
+  const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry[] } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,8 +108,10 @@ export function Dashboard() {
     return () => { if (retryTimerRef.current) clearTimeout(retryTimerRef.current); };
   }, [loadData]);
 
-  const handleVoiceConfirm = async (entry: ParsedEntry) => {
-    await saveVoiceEntry(entry, categories);
+  const handleVoiceConfirm = async (entries: ParsedEntry[]) => {
+    for (const entry of entries) {
+      await saveVoiceEntry(entry, categories);
+    }
     fetchData().catch(() => {});
   };
 

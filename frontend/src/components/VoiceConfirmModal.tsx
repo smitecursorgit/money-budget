@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, X, Edit3, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, CheckCircle, Trash2, Pencil, TrendingUp, TrendingDown, Bell } from 'lucide-react';
 import { ParsedEntry, Category } from '../types/index.ts';
 import { Button } from './ui/Button.tsx';
 import { useAppStore } from '../store/index.ts';
 
 interface VoiceConfirmModalProps {
   transcription: string;
-  parsed: ParsedEntry;
+  parsed: ParsedEntry[];
   categories: Category[];
-  onConfirm: (entry: ParsedEntry) => Promise<void>;
+  onConfirm: (entries: ParsedEntry[]) => Promise<void>;
   onClose: () => void;
 }
 
@@ -22,47 +22,45 @@ export function VoiceConfirmModal({
 }: VoiceConfirmModalProps) {
   const { user } = useAppStore();
   const currency = user?.currency || 'RUB';
-  const fmtAmount = (n: number) =>
+  const fmt = (n: number) =>
     n.toLocaleString('ru', { style: 'currency', currency, maximumFractionDigits: 0 });
 
-  const [editing, setEditing] = useState(false);
-  const [entry, setEntry] = useState<ParsedEntry>({ ...parsed });
+  const [entries, setEntries] = useState<ParsedEntry[]>(parsed.map((e) => ({ ...e })));
+  const [editIndex, setEditIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const isReminder = entry.type === 'reminder';
-  const isIncome = entry.type === 'income';
+  const updateEntry = (index: number, updated: ParsedEntry) => {
+    setEntries((prev) => prev.map((e, i) => (i === index ? updated : e)));
+  };
 
-  const needsAmount = entry.type !== 'reminder';
-  const missingAmount = needsAmount && (!entry.amount || entry.amount <= 0);
+  const removeEntry = (index: number) => {
+    setEntries((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleConfirm = async () => {
-    if (missingAmount) {
-      setSaveError('Укажите сумму операции');
+    const invalid = entries.find((e) => e.type !== 'reminder' && (!e.amount || e.amount <= 0));
+    if (invalid) {
+      setError('У одной из операций не указана сумма');
       return;
     }
-    setSaveError(null);
+    if (entries.length === 0) {
+      onClose();
+      return;
+    }
+    setError(null);
     setLoading(true);
     try {
-      await onConfirm(entry);
+      await onConfirm(entries);
       onClose();
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { error?: string; fieldErrors?: Record<string, string[]> } }; message?: string };
-      const serverMsg = axiosErr?.response?.data?.error ?? axiosErr?.message;
-      const fieldErrors = axiosErr?.response?.data?.fieldErrors;
-      if (fieldErrors?.amount) {
-        setSaveError('Укажите сумму — она не может быть нулевой');
-      } else {
-        setSaveError(serverMsg || 'Не удалось сохранить. Попробуйте ещё раз.');
-      }
+      const msg = (err as { response?: { data?: { error?: string } }; message?: string })
+        ?.response?.data?.error ?? (err as { message?: string })?.message;
+      setError(msg || 'Не удалось сохранить. Попробуйте ещё раз.');
     } finally {
       setLoading(false);
     }
   };
-
-  const matchedCategory = categories.find(
-    (c) => c.name.toLowerCase() === entry.category?.toLowerCase()
-  );
 
   return (
     <AnimatePresence>
@@ -71,14 +69,9 @@ export function VoiceConfirmModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(8px)',
-          zIndex: 200,
-          display: 'flex',
-          alignItems: 'flex-end',
-          padding: '0 12px 20px',
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+          zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px 20px',
         }}
         onClick={onClose}
       >
@@ -89,106 +82,85 @@ export function VoiceConfirmModal({
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           onClick={(e) => e.stopPropagation()}
           style={{
-            width: '100%',
-            background: 'rgba(20, 20, 30, 0.95)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '24px',
-            padding: '20px',
-            backdropFilter: 'blur(40px)',
+            width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+            background: 'rgba(20,20,30,0.97)', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '24px', backdropFilter: 'blur(40px)', overflow: 'hidden',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {isIncome ? (
-                <TrendingUp size={20} color="var(--income)" />
-              ) : (
-                <TrendingDown size={20} color={isReminder ? '#f59e0b' : 'var(--expense)'} />
-              )}
-              <span style={{ fontWeight: 700, fontSize: '16px' }}>
-                {isReminder ? 'Напоминание' : isIncome ? 'Доход' : 'Расход'}
-              </span>
+          {/* Header */}
+          <div style={{ padding: '18px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: '16px', marginBottom: '2px' }}>
+                  {entries.length > 1 ? `${entries.length} операции` : 'Операция'}
+                </p>
+                <p style={{ fontSize: '12px', color: 'rgba(240,240,245,0.4)' }}>Распознано</p>
+              </div>
+              <button onClick={onClose} style={{ background: 'none', padding: '4px', color: 'rgba(240,240,245,0.4)', border: 'none', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
             </div>
-            <button
-              onClick={onClose}
-              style={{ background: 'none', padding: '4px', color: 'rgba(240,240,245,0.5)' }}
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <div
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              borderRadius: '12px',
-              padding: '12px',
-              marginBottom: '16px',
-            }}
-          >
-            <p style={{ fontSize: '12px', color: 'rgba(240,240,245,0.4)', marginBottom: '4px' }}>
-              Распознано
-            </p>
-            <p style={{ fontSize: '14px', fontStyle: 'italic', color: 'rgba(240,240,245,0.8)' }}>
+            <p style={{ fontSize: '13px', fontStyle: 'italic', color: 'rgba(240,240,245,0.7)', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', padding: '8px 12px' }}>
               «{transcription}»
             </p>
           </div>
 
-          {!editing ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-              {entry.amount && (
-                <Row label="Сумма">
-                  <span style={{ fontSize: '22px', fontWeight: 700, color: isIncome ? 'var(--income)' : 'var(--expense)' }}>
-                    {isIncome ? '+' : '-'}{fmtAmount(entry.amount)}
-                  </span>
-                </Row>
-              )}
-              {entry.category && (
-                <Row label="Категория">
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {matchedCategory?.icon && <span style={{ fontSize: '18px' }}>{matchedCategory.icon}</span>}
-                    <span style={{ fontWeight: 600 }}>{entry.category}</span>
-                  </span>
-                </Row>
-              )}
-              {entry.date && (
-                <Row label="Дата">
-                  {new Date(entry.date).toLocaleDateString('ru', { day: 'numeric', month: 'long' })}
-                </Row>
-              )}
-              {entry.reminderTitle && <Row label="Напоминание">{entry.reminderTitle}</Row>}
-              {entry.reminderRecurrence && (
-                <Row label="Повтор">{recurrenceLabel(entry.reminderRecurrence)}</Row>
-              )}
-            </div>
-          ) : (
-            <EditForm entry={entry} categories={categories} onChange={setEntry} />
-          )}
+          {/* Entries list */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
+            {entries.length === 0 ? (
+              <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '20px 0', fontSize: '14px' }}>
+                Все операции удалены
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {entries.map((entry, i) => (
+                  <div key={i}>
+                    {editIndex === i ? (
+                      <EntryEditCard
+                        entry={entry}
+                        categories={categories}
+                        fmt={fmt}
+                        onSave={(updated) => { updateEntry(i, updated); setEditIndex(null); }}
+                        onCancel={() => setEditIndex(null)}
+                      />
+                    ) : (
+                      <EntryViewCard
+                        entry={entry}
+                        categories={categories}
+                        fmt={fmt}
+                        onEdit={() => setEditIndex(i)}
+                        onDelete={() => removeEntry(i)}
+                        showDelete={entries.length > 1}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-          {saveError && (
-            <div style={{ marginBottom: '12px', padding: '10px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '12px', fontSize: '13px', color: '#f87171' }}>
-              {saveError}
+          {/* Footer */}
+          <div style={{ padding: '12px 20px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+            {error && (
+              <div style={{ marginBottom: '10px', padding: '10px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '12px', fontSize: '13px', color: '#f87171' }}>
+                {error}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>
+                Отмена
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleConfirm}
+                loading={loading}
+                style={{ flex: 2 }}
+              >
+                <CheckCircle size={16} />
+                {entries.length > 1 ? `Сохранить все (${entries.length})` : 'Сохранить'}
+              </Button>
             </div>
-          )}
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={() => setEditing(!editing)}
-              style={{ flex: 1 }}
-            >
-              <Edit3 size={16} />
-              {editing ? 'Готово' : 'Изменить'}
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              onClick={handleConfirm}
-              loading={loading}
-              style={{ flex: 2, opacity: missingAmount ? 0.5 : 1 }}
-            >
-              <CheckCircle size={16} />
-              Сохранить
-            </Button>
           </div>
         </motion.div>
       </motion.div>
@@ -196,111 +168,185 @@ export function VoiceConfirmModal({
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+/* ─── Read-only entry card ─── */
+function EntryViewCard({
+  entry,
+  categories,
+  fmt,
+  onEdit,
+  onDelete,
+  showDelete,
+}: {
+  entry: ParsedEntry;
+  categories: Category[];
+  fmt: (n: number) => string;
+  onEdit: () => void;
+  onDelete: () => void;
+  showDelete: boolean;
+}) {
+  const isIncome = entry.type === 'income';
+  const isReminder = entry.type === 'reminder';
+
+  const matchedCat = categories.find((c) => c.name.toLowerCase() === entry.category?.toLowerCase());
+
+  const typeColor = isReminder ? '#f59e0b' : isIncome ? 'var(--income)' : 'var(--expense)';
+  const TypeIcon = isIncome ? TrendingUp : isReminder ? Bell : TrendingDown;
+
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span style={{ fontSize: '13px', color: 'rgba(240,240,245,0.45)' }}>{label}</span>
-      <span style={{ fontSize: '15px', color: 'var(--text-primary)' }}>{children}</span>
+    <div
+      style={{
+        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: '16px', padding: '14px',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: '10px', flexShrink: 0,
+            background: `${typeColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <TypeIcon size={16} color={typeColor} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            {entry.amount ? (
+              <p style={{ fontWeight: 700, fontSize: '17px', color: typeColor }}>
+                {isIncome ? '+' : isReminder ? '' : '-'}{fmt(entry.amount)}
+              </p>
+            ) : (
+              <p style={{ fontSize: '13px', color: 'rgba(239,68,68,0.8)', fontWeight: 600 }}>Сумма не указана</p>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
+              {entry.category && (
+                <span style={{ fontSize: '12px', color: 'rgba(240,240,245,0.6)' }}>
+                  {matchedCat?.icon} {entry.category}
+                </span>
+              )}
+              {entry.note && (
+                <span style={{ fontSize: '11px', color: 'rgba(240,240,245,0.35)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' }}>
+                  {entry.note}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '4px', flexShrink: 0, marginLeft: '8px' }}>
+          <button
+            onClick={onEdit}
+            style={{ padding: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'rgba(240,240,245,0.5)' }}
+          >
+            <Pencil size={14} />
+          </button>
+          {showDelete && (
+            <button
+              onClick={onDelete}
+              style={{ padding: '6px', background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#ef4444' }}
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-function EditForm({
+/* ─── Inline edit card ─── */
+function EntryEditCard({
   entry,
   categories,
-  onChange,
+  fmt: _fmt,
+  onSave,
+  onCancel,
 }: {
   entry: ParsedEntry;
   categories: Category[];
-  onChange: (e: ParsedEntry) => void;
+  fmt: (n: number) => string;
+  onSave: (updated: ParsedEntry) => void;
+  onCancel: () => void;
 }) {
-  const filteredCategories = categories.filter((c) => c.type === entry.type || entry.type === 'reminder');
+  const [type, setType] = useState<'expense' | 'income'>(
+    entry.type === 'reminder' ? 'expense' : entry.type
+  );
+  const [amount, setAmount] = useState(entry.amount ? String(entry.amount) : '');
+  const [category, setCategory] = useState(entry.category || '');
+  const [date, setDate] = useState(entry.date || new Date().toISOString().slice(0, 10));
+  const [note, setNote] = useState(entry.note || '');
+
+  const filteredCats = categories.filter((c) => c.type === type);
+
+  const handleSave = () => {
+    onSave({
+      ...entry,
+      type,
+      amount: parseFloat(amount) || undefined,
+      category: category || undefined,
+      date,
+      note: note || undefined,
+    });
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-      <div>
-        <label style={{ fontSize: '12px', color: 'rgba(240,240,245,0.45)', marginBottom: '4px', display: 'block' }}>
-          Тип
-        </label>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {(['expense', 'income'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => onChange({ ...entry, type: t })}
-              style={{
-                flex: 1,
-                padding: '8px',
-                borderRadius: '10px',
-                border: `1px solid ${entry.type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(255,255,255,0.08)'}`,
-                background: entry.type === t
-                  ? t === 'income' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'
-                  : 'rgba(255,255,255,0.04)',
-                color: entry.type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(240,240,245,0.5)',
-                fontWeight: 600,
-                fontSize: '13px',
-                cursor: 'pointer',
-              }}
-            >
-              {t === 'income' ? 'Доход' : 'Расход'}
-            </button>
-          ))}
-        </div>
+    <div style={{
+      background: 'rgba(108,99,255,0.08)', border: '1px solid rgba(108,99,255,0.25)',
+      borderRadius: '16px', padding: '14px',
+    }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+        {(['expense', 'income'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => { setType(t); setCategory(''); }}
+            style={{
+              flex: 1, padding: '7px', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(255,255,255,0.08)'}`,
+              background: type === t ? (t === 'income' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)') : 'rgba(255,255,255,0.04)',
+              color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(240,240,245,0.4)',
+            }}
+          >
+            {t === 'income' ? '↑ Доход' : '↓ Расход'}
+          </button>
+        ))}
       </div>
-
-      <div>
-        <label style={{ fontSize: '12px', color: 'rgba(240,240,245,0.45)', marginBottom: '4px', display: 'block' }}>
-          Сумма
-        </label>
-        <input
-          type="number"
-          value={entry.amount || ''}
-          onChange={(e) => onChange({ ...entry, amount: parseFloat(e.target.value) || undefined })}
-          placeholder="0"
-          style={{ width: '100%', padding: '10px 12px', borderRadius: '10px' }}
-        />
-      </div>
-
-      <div>
-        <label style={{ fontSize: '12px', color: 'rgba(240,240,245,0.45)', marginBottom: '4px', display: 'block' }}>
-          Категория
-        </label>
-        <select
-          value={entry.category || ''}
-          onChange={(e) => onChange({ ...entry, category: e.target.value })}
-          style={{ width: '100%', padding: '10px 12px', borderRadius: '10px' }}
+      <input
+        type="number"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        placeholder="Сумма"
+        style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', marginBottom: '8px', fontSize: '15px', fontWeight: 700 }}
+      />
+      <select
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+        style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', marginBottom: '8px' }}
+      >
+        <option value="">Без категории</option>
+        {filteredCats.map((c) => <option key={c.id} value={c.name}>{c.icon} {c.name}</option>)}
+      </select>
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', marginBottom: '8px' }}
+      />
+      <input
+        type="text"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Заметка"
+        style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', marginBottom: '10px' }}
+      />
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button
+          onClick={onCancel}
+          style={{ flex: 1, padding: '9px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: 'none', color: 'rgba(240,240,245,0.6)', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
         >
-          <option value="">Без категории</option>
-          {filteredCategories.map((c) => (
-            <option key={c.id} value={c.name}>
-              {c.icon} {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label style={{ fontSize: '12px', color: 'rgba(240,240,245,0.45)', marginBottom: '4px', display: 'block' }}>
-          Дата
-        </label>
-        <input
-          type="date"
-          value={entry.date || new Date().toISOString().slice(0, 10)}
-          onChange={(e) => onChange({ ...entry, date: e.target.value })}
-          style={{ width: '100%', padding: '10px 12px', borderRadius: '10px' }}
-        />
-      </div>
-
-      <div>
-        <label style={{ fontSize: '12px', color: 'rgba(240,240,245,0.45)', marginBottom: '4px', display: 'block' }}>
-          Заметка
-        </label>
-        <input
-          type="text"
-          value={entry.note || ''}
-          onChange={(e) => onChange({ ...entry, note: e.target.value })}
-          placeholder="Необязательно"
-          style={{ width: '100%', padding: '10px 12px', borderRadius: '10px' }}
-        />
+          Отмена
+        </button>
+        <button
+          onClick={handleSave}
+          style={{ flex: 2, padding: '9px', borderRadius: '10px', background: 'rgba(108,99,255,0.3)', border: '1px solid rgba(108,99,255,0.4)', color: 'var(--accent-light)', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
+        >
+          Готово
+        </button>
       </div>
     </div>
   );
@@ -308,11 +354,10 @@ function EditForm({
 
 function recurrenceLabel(r: string) {
   const map: Record<string, string> = {
-    once: 'Однократно',
-    daily: 'Каждый день',
-    weekly: 'Каждую неделю',
-    monthly: 'Каждый месяц',
-    yearly: 'Каждый год',
+    once: 'Однократно', daily: 'Каждый день',
+    weekly: 'Каждую неделю', monthly: 'Каждый месяц', yearly: 'Каждый год',
   };
   return map[r] || r;
 }
+// Keep export for potential external use
+export { recurrenceLabel };

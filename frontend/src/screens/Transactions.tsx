@@ -26,7 +26,7 @@ export function Transactions() {
   const [filterType, setFilterType] = useState('');
   const [search, setSearch] = useState('');
   const [showVoice, setShowVoice] = useState(false);
-  const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry } | null>(null);
+  const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry[] } | null>(null);
   const [showAddForm, setShowAddForm] = useState((location.state as { openAdd?: boolean })?.openAdd === true);
   const [editTarget, setEditTarget] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,8 +77,10 @@ export function Transactions() {
     }
   };
 
-  const handleVoiceConfirm = async (entry: ParsedEntry) => {
-    await saveVoiceEntry(entry, categories);
+  const handleVoiceConfirm = async (entries: ParsedEntry[]) => {
+    for (const entry of entries) {
+      await saveVoiceEntry(entry, categories);
+    }
     await load();
   };
 
@@ -165,6 +167,7 @@ export function Transactions() {
                 onResult={(t, p) => { setVoiceResult({ transcription: t, parsed: p }); setShowVoice(false); }}
                 onError={(msg) => alert(msg)}
               />
+
             </Card>
           </motion.div>
         )}

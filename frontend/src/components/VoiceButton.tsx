@@ -5,7 +5,7 @@ import { voiceApi } from '../api/client.ts';
 import { ParsedEntry } from '../types/index.ts';
 
 interface VoiceButtonProps {
-  onResult: (transcription: string, parsed: ParsedEntry) => void;
+  onResult: (transcription: string, parsed: ParsedEntry[]) => void;
   onError?: (msg: string) => void;
 }
 
@@ -44,7 +44,8 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
         setState('processing');
         try {
           const { data } = await voiceApi.parseAudio(blob);
-          onResult(data.transcription, data.parsed);
+          const parsed: ParsedEntry[] = Array.isArray(data.parsed) ? data.parsed : [data.parsed];
+          onResult(data.transcription, parsed);
         } catch (err: unknown) {
           const axiosErr = err as { response?: { data?: { error?: string } } };
           const serverMsg = axiosErr?.response?.data?.error;
