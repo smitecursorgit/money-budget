@@ -2,14 +2,22 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import { ParsedEntry } from '../types/index';
 
-// Groq uses OpenAI-compatible API — only baseURL and models differ
-const groq = new OpenAI({
-  apiKey: process.env.GROQ_API_KEY,
-  baseURL: 'https://api.groq.com/openai/v1',
-});
+// Groq uses OpenAI-compatible API — only baseURL and models differ.
+// Lazy-initialized to avoid throwing at module load time when GROQ_API_KEY is missing.
+let _groq: OpenAI | null = null;
+function getGroqClient(): OpenAI {
+  if (!_groq) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      throw new Error('GROQ_API_KEY environment variable is not set');
+    }
+    _groq = new OpenAI({ apiKey, baseURL: 'https://api.groq.com/openai/v1' });
+  }
+  return _groq;
+}
 
 export async function transcribeAudio(filePath: string): Promise<string> {
-  const transcription = await groq.audio.transcriptions.create({
+  const transcription = await getGroqClient().audio.transcriptions.create({
     file: fs.createReadStream(filePath),
     model: 'whisper-large-v3',
     language: 'ru',
@@ -117,7 +125,7 @@ ${categoryList || 'Нет пользовательских категорий �
 
 Команда для разбора: "${text}"`;
 
-  const response = await groq.chat.completions.create({
+  const response = await getGroqClient().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
