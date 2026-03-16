@@ -108,9 +108,9 @@ npm run build
 # dist/ загрузи на хостинг
 ```
 
-Пример: если бэкенд на `https://money-budget-backend.onrender.com`, то:
+Пример: если бэкенд на `https://money-budget-q2lk.onrender.com`, то:
 ```env
-VITE_API_URL=https://money-budget-backend.onrender.com
+VITE_API_URL=https://money-budget-q2lk.onrender.com
 ```
 
 ### Backend → Railway / Render / VPS
