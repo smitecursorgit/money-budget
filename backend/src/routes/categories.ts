@@ -19,8 +19,9 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
     const budgetId = await getBudgetId(userId);
+    const where = budgetId ? { OR: [{ budgetId }, { userId, budgetId: null }] } : { userId };
     const categories = await prisma.category.findMany({
-      where: { OR: [{ budgetId }, { userId, budgetId: null }] },
+      where,
       orderBy: [{ type: 'asc' }, { name: 'asc' }],
     });
     res.json(categories);

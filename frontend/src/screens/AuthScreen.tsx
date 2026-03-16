@@ -28,7 +28,7 @@ export function AuthScreen() {
         const { data } = await authApi.login(initData);
         setToken(data.token);
         setUser(data.user);
-        if (data.budgets) setBudgets(data.budgets);
+        setBudgets(data.budgets ?? []);
 
         const catRes = await categoriesApi.list();
         setCategories(catRes.data);

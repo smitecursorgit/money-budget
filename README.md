@@ -98,9 +98,19 @@ NODE_ENV=development
 ## Деплой
 
 ### Frontend → Vercel / Netlify
+
+**Важно:** Перед сборкой задай `VITE_API_URL` на полный URL бэкенда, иначе запросы пойдут на `/api` (тот же домен) и будут падать.
+
 ```bash
-cd frontend && npm run build
-# dist/ загрузить на хостинг
+cd frontend
+# В Vercel/Netlify: добавь Env Var VITE_API_URL = https://your-backend.onrender.com
+npm run build
+# dist/ загрузи на хостинг
+```
+
+Пример: если бэкенд на `https://money-budget-backend.onrender.com`, то:
+```env
+VITE_API_URL=https://money-budget-backend.onrender.com
 ```
 
 ### Backend → Railway / Render / VPS
@@ -108,3 +118,5 @@ cd frontend && npm run build
 cd backend && npm run build
 node dist/index.js
 ```
+
+На Render в `render.yaml` уже настроены `prisma migrate deploy` в build и переменные окружения (DATABASE_URL, JWT_SECRET и т.д.).

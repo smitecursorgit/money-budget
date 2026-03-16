@@ -3,29 +3,40 @@ import { prisma } from './prisma';
 /**
  * Resolves the effective budget ID for a user (current or first).
  * Migrates legacy users (no budgetId on data) to a default budget.
+ * Returns null on any error — callers fall back to userId-only queries.
  */
 export async function getBudgetId(userId: string): Promise<string | null> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: { budgets: { orderBy: { createdAt: 'asc' } } },
-  });
-  if (!user) return null;
-
-  // Already have current budget
-  if (user.currentBudgetId) return user.currentBudgetId;
-
-  // Have budgets but no current — set first as current
-  if (user.budgets.length > 0) {
-    await prisma.user.update({
+  try {
+    const user = await prisma.user.findUnique({
       where: { id: userId },
-      data: { currentBudgetId: user.budgets[0].id },
+      include: { budgets: { orderBy: { createdAt: 'asc' } } },
     });
-    return user.budgets[0].id;
-  }
+    if (!user) return null;
 
-  // No budgets — try migration (legacy user with userId-only data)
-  await migrateUserToBudgets(userId);
-  return getBudgetId(userId);
+    // Already have current budget
+    if (user.currentBudgetId) return user.currentBudgetId;
+
+    // Have budgets but no current — set first as current
+    if (user.budgets.length > 0) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { currentBudgetId: user.budgets[0].id },
+      });
+      return user.budgets[0].id;
+    }
+
+    // No budgets — try migration (legacy user with userId-only data)
+    try {
+      await migrateUserToBudgets(userId);
+      return getBudgetId(userId);
+    } catch (migrateErr) {
+      console.error('[migrateUserToBudgets]', migrateErr);
+      return null;
+    }
+  } catch (err) {
+    console.error('[getBudgetId]', err);
+    return null;
+  }
 }
 
 /**
