@@ -99,19 +99,15 @@ NODE_ENV=development
 
 ### Frontend → Vercel / Netlify
 
-**Важно:** Перед сборкой задай `VITE_API_URL` на полный URL бэкенда, иначе запросы пойдут на `/api` (тот же домен) и будут падать.
+По умолчанию используется `/api` — `vercel.json` и `netlify.toml` проксируют запросы на backend. Запросы same-origin, CORS не нужен.
 
 ```bash
 cd frontend
-# В Vercel/Netlify: добавь Env Var VITE_API_URL = https://your-backend.onrender.com
 npm run build
-# dist/ загрузи на хостинг
+# dist/ загрузи на хостинг (Vercel/Netlify подхватят из git)
 ```
 
-Пример: если бэкенд на `https://money-budget-q2lk.onrender.com`, то:
-```env
-VITE_API_URL=https://money-budget-q2lk.onrender.com
-```
+Если фронт на другом хостинге (без прокси), задай в build env: `VITE_API_URL=https://money-budget-q2lk.onrender.com`
 
 ### Backend → Railway / Render / VPS
 ```bash

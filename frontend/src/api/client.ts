@@ -1,15 +1,32 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+declare global {
+  interface Window {
+    __API_BASE_URL__?: string;
+  }
+}
+
+const PRODUCTION_BACKEND = 'https://money-budget-q2lk.onrender.com';
+
+function getBaseUrl(): string {
+  if (typeof window === 'undefined') return import.meta.env.VITE_API_URL || '/api';
+  // 1) config.js (runtime override) 2) env 3) production fallback 4) /api (proxy)
+  if (window.__API_BASE_URL__) return window.__API_BASE_URL__;
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  if (import.meta.env.PROD) return PRODUCTION_BACKEND; // если config.js не загрузился
+  return '/api';
+}
 
 let loggingOut = false;
 
 export const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: getBaseUrl(),
   timeout: 30000,
 });
 
 api.interceptors.request.use((config) => {
+  // Используем URL на момент запроса — config.js мог загрузиться после инициализации axios
+  config.baseURL = getBaseUrl();
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
