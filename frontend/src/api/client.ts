@@ -21,7 +21,7 @@ let loggingOut = false;
 
 export const api = axios.create({
   baseURL: getBaseUrl(),
-  timeout: 30000,
+  timeout: 60000,
 });
 
 api.interceptors.request.use((config) => {

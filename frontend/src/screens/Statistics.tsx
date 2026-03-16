@@ -66,24 +66,31 @@ export function Statistics() {
     return { from, to };
   }, [period]);
 
-  // Load summary + monthly only when period changes
+  // Load summary + monthly with retry (cold start Render ~50s)
   const loadBase = useCallback(async () => {
     setLoading(true);
     setError(null);
-    try {
-      const range = getDateRange();
-      const months = period === 'month' ? 1 : period === 'quarter' ? 3 : 12;
-      const [sumRes, monRes] = await Promise.all([
-        statsApi.summary(range),
-        statsApi.monthly(months),
-      ]);
-      setSummary(sumRes.data);
-      setMonthly(monRes.data);
-    } catch {
-      setError('Не удалось загрузить статистику');
-    } finally {
-      setLoading(false);
-    }
+    const range = getDateRange();
+    const months = period === 'month' ? 1 : period === 'quarter' ? 3 : 12;
+    const fetchWithRetry = async (retries = 2): Promise<void> => {
+      try {
+        const [sumRes, monRes] = await Promise.all([
+          statsApi.summary(range),
+          statsApi.monthly(months),
+        ]);
+        setSummary(sumRes.data);
+        setMonthly(monRes.data);
+      } catch (e) {
+        if (retries > 0 && (!(e as { response?: { status: number } }).response || (e as { response?: { status: number } }).response?.status !== 401)) {
+          await new Promise((r) => setTimeout(r, 3000));
+          return fetchWithRetry(retries - 1);
+        }
+        setError('Не удалось загрузить статистику');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchWithRetry();
   }, [period, getDateRange]);
 
   // Load category stats when period or chartTab changes (except 'bar' — it uses monthly data)
