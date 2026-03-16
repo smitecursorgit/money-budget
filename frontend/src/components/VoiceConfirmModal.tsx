@@ -105,8 +105,18 @@ export function VoiceConfirmModal({
             </p>
           </div>
 
-          {/* Entries list */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
+          {/* Entries list — minHeight: 0 + overflow scroll required for iOS flex scroll */}
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'scroll',
+              WebkitOverflowScrolling: 'touch',
+              padding: '12px 20px',
+              paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+              touchAction: 'pan-y',
+            }}
+          >
             {entries.length === 0 ? (
               <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: '20px 0', fontSize: '14px' }}>
                 Все операции удалены
