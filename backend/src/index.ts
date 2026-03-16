@@ -42,21 +42,24 @@ const PORT = parseInt(process.env.PORT || '3001');
 const ALLOWED_ORIGINS = new Set(
   [
     process.env.MINI_APP_URL,
-    // Telegram WebApp always sends requests without Origin or with t.me/telegram.org
     'https://web.telegram.org',
     'https://telegram.org',
-    // Local development
     process.env.NODE_ENV !== 'production' ? 'http://localhost:5173' : null,
     process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:5173' : null,
   ].filter(Boolean) as string[]
 );
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no Origin header (mobile apps, curl, Postman)
       if (!origin) return callback(null, true);
       if (ALLOWED_ORIGINS.has(origin)) return callback(null, true);
+      // Production: allow any HTTPS origin (Telegram Mini App can be hosted on Vercel, Netlify, etc.)
+      if (isProduction && (origin.startsWith('https://') || origin.startsWith('http://localhost'))) {
+        return callback(null, origin);
+      }
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
@@ -120,7 +123,13 @@ app.post('/webhook/telegram', express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
-app.get('/health', (_req, res) => res.json({ status: 'ok', ts: new Date().toISOString() }));
+app.get('/health', (_req, res) =>
+  res.json({
+    status: 'ok',
+    ts: new Date().toISOString(),
+    apiUrl: process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL || null,
+  })
+);
 
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
 app.listen(PORT, HOST, () => {

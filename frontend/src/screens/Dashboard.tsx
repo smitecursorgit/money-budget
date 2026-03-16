@@ -8,6 +8,7 @@ import { VoiceButton } from '../components/VoiceButton.tsx';
 import { VoiceConfirmModal } from '../components/VoiceConfirmModal.tsx';
 import { statsApi, transactionsApi, remindersApi, budgetsApi } from '../api/client.ts';
 import { useAppStore, useTransactionStore, useStatsStore } from '../store/index.ts';
+
 import { ParsedEntry, StatsSummary, Reminder, Transaction } from '../types/index.ts';
 import { saveVoiceEntry } from '../utils/saveVoiceEntry.ts';
 
@@ -37,7 +38,7 @@ function writeCache(data: { summary: StatsSummary; transactions: Transaction[]; 
 }
 
 export function Dashboard() {
-  const { user, categories, budgets } = useAppStore();
+  const { user, categories, budgets, logout } = useAppStore();
   const { transactions, setTransactions, addTransaction } = useTransactionStore();
   const invalidateStats = useStatsStore((s) => s.invalidateStats);
   const navigate = useNavigate();
@@ -61,6 +62,14 @@ export function Dashboard() {
     if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
     errorTimerRef.current = setTimeout(() => setError(null), 5000);
   }, []);
+
+  const handleLogout = useCallback(() => {
+    try {
+      localStorage.removeItem(CACHE_KEY);
+    } catch { /* ignore */ }
+    useTransactionStore.getState().setTransactions([], 0);
+    logout();
+  }, [logout]);
 
   const fetchData = useCallback(async () => {
     const [summaryRes, txRes, remRes] = await Promise.all([
@@ -184,28 +193,43 @@ export function Dashboard() {
             border: '1px solid var(--glass-border)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            flexDirection: 'column',
+            gap: '12px',
             backdropFilter: 'blur(40px)',
             WebkitBackdropFilter: 'blur(40px)',
           }}
         >
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Не удалось загрузить данные</span>
-          <button
-            onClick={() => loadData(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '5px',
-              background: 'var(--accent-dim)',
-              border: '1px solid rgba(34,197,94,0.28)',
-              borderRadius: 'var(--radius-pill)',
-              padding: '6px 12px',
-              color: 'var(--accent)',
-              fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-            }}
-          >
-            <RefreshCw size={12} />
-            Обновить
-          </button>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => loadData(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '5px',
+                background: 'var(--accent-dim)',
+                border: '1px solid rgba(34,197,94,0.28)',
+                borderRadius: 'var(--radius-pill)',
+                padding: '6px 12px',
+                color: 'var(--accent)',
+                fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              <RefreshCw size={12} />
+              Обновить
+            </button>
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: '6px 12px',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 'var(--radius-pill)',
+                color: 'var(--text-secondary)',
+                fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              Выйти и войти снова
+            </button>
+          </div>
         </motion.div>
       )}
 
