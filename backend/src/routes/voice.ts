@@ -56,7 +56,7 @@ const upload = multer({
 
 // Multer error handler — must be registered before the route
 const uploadSingle = (req: Request, res: Response, next: import('express').NextFunction) => {
-  upload.single('audio')(req as any, res, (err) => {
+  upload.single('audio')(req as any, res as any, (err) => {
     if (err) {
       res.status(400).json({ error: `Ошибка загрузки файла: ${err.message}` });
       return;
