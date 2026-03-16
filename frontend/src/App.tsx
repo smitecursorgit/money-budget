@@ -17,7 +17,7 @@ function PageWrapper({ children }: { children: React.ReactNode }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2 }}
-      style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+      style={{ flex: 1, minHeight: 0, position: 'relative' }}
     >
       {children}
     </motion.div>
