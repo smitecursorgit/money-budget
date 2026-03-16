@@ -102,9 +102,10 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
       initialBalance,
       period: { from: dateFrom.toISOString(), to: dateTo.toISOString() },
     });
-  } catch (err) {
-    console.error('Stats summary error:', err);
-    res.status(500).json({ error: 'Не удалось загрузить сводку' });
+  } catch (err: unknown) {
+    const e = err as { message?: string; code?: string };
+    console.error('Stats summary error:', JSON.stringify({ code: e.code, message: e.message, stack: err instanceof Error ? err.stack : undefined }));
+    res.status(500).json({ error: `Не удалось загрузить сводку: ${e.message?.slice(0, 150) || 'unknown'}` });
   }
 });
 
@@ -171,9 +172,10 @@ router.get('/by-category', async (req: Request, res: Response): Promise<void> =>
       .sort((a, b) => b.total - a.total);
 
     res.json(result);
-  } catch (err) {
-    console.error('Stats by-category error:', err);
-    res.status(500).json({ error: 'Не удалось загрузить статистику по категориям' });
+  } catch (err: unknown) {
+    const e = err as { message?: string; code?: string };
+    console.error('Stats by-category error:', JSON.stringify({ code: e.code, message: e.message }));
+    res.status(500).json({ error: `Не удалось загрузить категории: ${e.message?.slice(0, 150) || 'unknown'}` });
   }
 });
 
@@ -207,9 +209,10 @@ router.get('/monthly', async (req: Request, res: Response): Promise<void> => {
       .map(([month, { income, expense }]) => ({ month, income, expense }));
 
     res.json(rows);
-  } catch (err) {
-    console.error('Stats monthly error:', err);
-    res.status(500).json({ error: 'Не удалось загрузить помесячную статистику' });
+  } catch (err: unknown) {
+    const e = err as { message?: string; code?: string };
+    console.error('Stats monthly error:', JSON.stringify({ code: e.code, message: e.message }));
+    res.status(500).json({ error: `Не удалось загрузить статистику: ${e.message?.slice(0, 150) || 'unknown'}` });
   }
 });
 

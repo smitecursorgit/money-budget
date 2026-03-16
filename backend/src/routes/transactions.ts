@@ -49,9 +49,10 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     ]);
 
     res.json({ transactions, total });
-  } catch (err) {
-    console.error('Transactions list error:', err);
-    res.status(500).json({ error: 'Failed to load transactions' });
+  } catch (err: unknown) {
+    const e = err as { message?: string; code?: string };
+    console.error('Transactions list error:', JSON.stringify({ code: e.code, message: e.message }));
+    res.status(500).json({ error: `Ошибка загрузки: ${e.message?.slice(0, 150) || 'unknown'}` });
   }
 });
 

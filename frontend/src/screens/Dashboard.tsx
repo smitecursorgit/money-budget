@@ -72,24 +72,39 @@ export function Dashboard() {
   }, [logout]);
 
   const fetchData = useCallback(async () => {
-    const [summaryRes, txRes, remRes] = await Promise.all([
+    const [summaryRes, txRes, remRes] = await Promise.allSettled([
       statsApi.summary(),
       transactionsApi.list({ limit: 20 }),
       remindersApi.upcoming(30),
     ]);
-    const newSummary: StatsSummary = summaryRes.data;
-    const newTransactions: Transaction[] = txRes.data.transactions;
-    const newReminders: Reminder[] = remRes.data.slice(0, 3);
 
-    setSummary(newSummary);
     const prevCache = readCache();
-    const safeTransactions =
-      newTransactions.length > 0 || txRes.data.total === 0
-        ? newTransactions
-        : (prevCache?.transactions ?? []);
-    setTransactions(safeTransactions, txRes.data.total);
-    setUpcomingReminders(newReminders);
-    writeCache({ summary: newSummary, transactions: safeTransactions, reminders: newReminders });
+
+    if (summaryRes.status === 'fulfilled') {
+      setSummary(summaryRes.value.data);
+    }
+
+    let safeTransactions = prevCache?.transactions ?? [];
+    let total = 0;
+    if (txRes.status === 'fulfilled') {
+      const newTx: Transaction[] = txRes.value.data.transactions;
+      total = txRes.value.data.total;
+      safeTransactions = newTx.length > 0 || total === 0 ? newTx : safeTransactions;
+    }
+    setTransactions(safeTransactions, total);
+
+    if (remRes.status === 'fulfilled') {
+      setUpcomingReminders(remRes.value.data.slice(0, 3));
+    }
+
+    writeCache({
+      summary: summaryRes.status === 'fulfilled' ? summaryRes.value.data : (prevCache?.summary ?? { income: 0, expense: 0, balance: 0 }),
+      transactions: safeTransactions,
+      reminders: remRes.status === 'fulfilled' ? remRes.value.data.slice(0, 3) : (prevCache?.reminders ?? []),
+    });
+
+    const allFailed = summaryRes.status === 'rejected' && txRes.status === 'rejected' && remRes.status === 'rejected';
+    if (allFailed) throw new Error('All API calls failed');
   }, [setTransactions]);
 
   const loadData = useCallback(async (isManual = false) => {
