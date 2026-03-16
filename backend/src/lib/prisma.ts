@@ -1,16 +1,69 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
-/**
- * Use DATABASE_URL as-is. Do NOT add pgbouncer=true — Prisma 5 works better without it
- * for both Render Postgres and Supabase. Adding it caused "connection closed" / 500 errors.
- */
+function buildUrl(): string {
+  const url = process.env.DATABASE_URL ?? '';
+  if (!url) return '';
+  const sep = url.includes('?') ? '&' : '?';
+  return `${url}${sep}connect_timeout=30&pool_timeout=30&socket_timeout=30`;
+}
+
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-export const prisma =
+const client =
   globalForPrisma.prisma ||
   new PrismaClient({
-    datasources: { db: { url: process.env.DATABASE_URL ?? '' } },
+    datasources: { db: { url: buildUrl() } },
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   });
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = client;
+
+function isRetryable(err: unknown): boolean {
+  const msg = String((err as { message?: string })?.message ?? '');
+  const code = (err as { code?: string })?.code;
+  return (
+    msg.includes('ConnectorError') ||
+    msg.includes('connection') ||
+    msg.includes('timed out') ||
+    msg.includes('Connection refused') ||
+    msg.includes('ECONNREFUSED') ||
+    msg.includes('socket') ||
+    code === 'P2024' ||
+    code === 'P2010'
+  );
+}
+
+/**
+ * Execute a Prisma operation with one automatic retry on connection errors.
+ * Supabase/Render free-tier databases can drop idle connections.
+ */
+export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    if (isRetryable(err)) {
+      console.warn('[prisma] ConnectorError — retrying in 1.5s...', (err as Error).message?.slice(0, 80));
+      await new Promise((r) => setTimeout(r, 1500));
+      try { await client.$connect(); } catch { /* ignore reconnect error */ }
+      return await fn();
+    }
+    throw err;
+  }
+}
+
+export async function warmUpConnection(): Promise<void> {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await client.$connect();
+      await client.$queryRaw(Prisma.sql`SELECT 1`);
+      console.log('[prisma] DB connection OK');
+      return;
+    } catch (err) {
+      console.warn(`[prisma] warmup attempt ${attempt}/3 failed:`, (err as Error).message?.slice(0, 80));
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 2000 * attempt));
+    }
+  }
+  console.error('[prisma] warmup: could not establish DB connection after 3 attempts');
+}
+
+export const prisma = client;

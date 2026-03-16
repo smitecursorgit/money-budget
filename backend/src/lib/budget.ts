@@ -1,4 +1,4 @@
-import { prisma } from './prisma';
+import { prisma, withRetry } from './prisma';
 
 /**
  * Resolves the effective budget ID for a user (current or first).
@@ -7,10 +7,10 @@ import { prisma } from './prisma';
  */
 export async function getBudgetId(userId: string): Promise<string | null> {
   try {
-    const user = await prisma.user.findUnique({
+    const user = await withRetry(() => prisma.user.findUnique({
       where: { id: userId },
       include: { budgets: { orderBy: { createdAt: 'asc' } } },
-    });
+    }));
     if (!user) return null;
 
     // Already have current budget

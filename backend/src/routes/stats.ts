@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth';
-import { prisma } from '../lib/prisma';
+import { prisma, withRetry } from '../lib/prisma';
 import { getBudgetId } from '../lib/budget';
 
 const router = Router();
@@ -59,10 +59,10 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const [user, budget] = await Promise.all([
+    const [user, budget] = await withRetry(() => Promise.all([
       prisma.user.findUnique({ where: { id: userId } }),
       budgetId ? prisma.budget.findUnique({ where: { id: budgetId } }) : null,
-    ]);
+    ]));
     const tz = user?.timezone || 'Europe/Moscow';
     const periodStart = user?.periodStart || 1;
 
@@ -80,7 +80,7 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
       ? { OR: [{ budgetId }, { userId, budgetId: null }], date: { gte: dateFrom, lt: dateTo } }
       : { userId, date: { gte: dateFrom, lt: dateTo } };
 
-    const [incomeAgg, expenseAgg] = await Promise.all([
+    const [incomeAgg, expenseAgg] = await withRetry(() => Promise.all([
       prisma.transaction.aggregate({
         where: { ...txWhere, type: 'income' },
         _sum: { amount: true },
@@ -89,7 +89,7 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
         where: { ...txWhere, type: 'expense' },
         _sum: { amount: true },
       }),
-    ]);
+    ]));
 
     const income = Number(incomeAgg._sum.amount ?? 0);
     const expense = Number(expenseAgg._sum.amount ?? 0);

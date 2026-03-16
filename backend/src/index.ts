@@ -141,8 +141,10 @@ app.get('/health', (_req, res) =>
 );
 
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
-app.listen(PORT, HOST, () => {
+app.listen(PORT, HOST, async () => {
   console.log(`Backend running on port ${PORT}`);
+  const { warmUpConnection } = await import('./lib/prisma');
+  await warmUpConnection();
   initBot();
   startCronJobs();
 });
