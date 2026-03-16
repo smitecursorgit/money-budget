@@ -16,31 +16,35 @@ interface ButtonProps {
 
 const variants = {
   primary: {
-    background: 'linear-gradient(135deg, #6c63ff, #a78bfa)',
+    background: 'linear-gradient(135deg, #26b84a 0%, #30d158 60%, #4ade80 100%)',
     color: '#fff',
-    border: 'none',
+    border: '1px solid rgba(74,222,128,0.30)',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.22) inset, 0 4px 18px rgba(48,209,88,0.38)',
   },
   secondary: {
-    background: 'rgba(255,255,255,0.06)',
-    color: '#f0f0f5',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(255,255,255,0.07)',
+    color: 'rgba(255,255,255,0.90)',
+    border: '1px solid rgba(255,255,255,0.10)',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.10) inset',
   },
   ghost: {
     background: 'transparent',
-    color: '#a78bfa',
+    color: '#30d158',
     border: 'none',
+    boxShadow: 'none',
   },
   danger: {
-    background: 'rgba(239,68,68,0.15)',
-    color: '#ef4444',
-    border: '1px solid rgba(239,68,68,0.25)',
+    background: 'rgba(255,69,58,0.12)',
+    color: '#ff453a',
+    border: '1px solid rgba(255,69,58,0.22)',
+    boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset',
   },
 };
 
 const sizes = {
-  sm: { padding: '8px 14px', fontSize: '13px', borderRadius: '10px', height: '36px' },
-  md: { padding: '12px 20px', fontSize: '15px', borderRadius: '14px', height: '46px' },
-  lg: { padding: '16px 28px', fontSize: '16px', borderRadius: '16px', height: '54px' },
+  sm: { padding: '7px 14px', fontSize: '13px', borderRadius: 'var(--radius-pill)', height: '34px' },
+  md: { padding: '11px 20px', fontSize: '15px', borderRadius: 'var(--radius-pill)', height: '46px' },
+  lg: { padding: '15px 28px', fontSize: '16px', borderRadius: 'var(--radius-pill)', height: '54px' },
 };
 
 export function Button({
@@ -61,7 +65,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled || loading}
       whileTap={{ scale: 0.96 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 28 }}
       className={className}
       style={{
         ...variants[variant],
@@ -71,15 +75,25 @@ export function Button({
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '8px',
+        gap: '7px',
         fontWeight: 600,
         cursor: disabled || loading ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.5 : 1,
+        opacity: disabled ? 0.45 : 1,
         transition: 'opacity 0.2s',
         userSelect: 'none',
+        backdropFilter: variant !== 'primary' ? 'blur(20px)' : undefined,
+        WebkitBackdropFilter: variant !== 'primary' ? 'blur(20px)' : undefined,
       }}
     >
-      {loading ? <span className="spin">⟳</span> : children}
+      {loading ? (
+        <motion.span
+          animate={{ rotate: 360 }}
+          transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+          style={{ display: 'inline-block', fontSize: '16px' }}
+        >
+          ⟳
+        </motion.span>
+      ) : children}
     </motion.button>
   );
 }

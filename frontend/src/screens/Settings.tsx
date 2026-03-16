@@ -390,7 +390,7 @@ function CategoryModal({
                 borderRadius: '10px',
                 fontSize: '20px',
                 border: `2px solid ${icon === e ? 'var(--accent)' : 'transparent'}`,
-                background: icon === e ? 'rgba(108,99,255,0.2)' : 'rgba(255,255,255,0.05)',
+                background: icon === e ? 'var(--accent-dim)' : 'rgba(255,255,255,0.05)',
                 cursor: 'pointer',
               }}
             >

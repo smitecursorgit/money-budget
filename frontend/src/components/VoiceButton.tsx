@@ -23,7 +23,6 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      // Pick best supported mimeType — try webm first (Chrome/Android), fall back to mp4 (iOS)
       const mimeType = [
         'audio/webm;codecs=opus',
         'audio/webm',
@@ -68,7 +67,6 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
       mediaRecorder.start();
       setState('recording');
 
-      // Auto-stop after 60 seconds
       maxTimerRef.current = setTimeout(() => {
         if (mediaRecorderRef.current?.state === 'recording') {
           mediaRecorderRef.current.stop();
@@ -91,15 +89,12 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
     }
   }, []);
 
-  // Clean up timer and microphone stream on unmount
   useEffect(() => () => {
     if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
     if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
     streamRef.current?.getTracks().forEach((t) => t.stop());
   }, []);
 
-  // Tap-to-toggle: single click starts/stops recording.
-  // No onPointerDown/Up to avoid double-trigger (pointerDown + click = two events).
   const handleClick = useCallback(() => {
     if (state === 'idle') startRecording();
     else if (state === 'recording') stopRecording();
@@ -108,69 +103,94 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
   const isRecording = state === 'recording';
   const isProcessing = state === 'processing';
 
+  const buttonBg = isRecording
+    ? 'linear-gradient(135deg, #ff453a 0%, #ff6b35 100%)'
+    : 'linear-gradient(135deg, #26b84a 0%, #30d158 60%, #4ade80 100%)';
+
+  const buttonShadow = isRecording
+    ? '0 0 0 0px rgba(255,69,58,0.5), 0 8px 32px rgba(255,69,58,0.40), 0 1px 0 rgba(255,255,255,0.25) inset'
+    : '0 8px 32px rgba(48,209,88,0.35), 0 1px 0 rgba(255,255,255,0.25) inset';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
       <motion.button
         onClick={handleClick}
         disabled={isProcessing}
         animate={{
-          scale: isRecording ? 1.05 : 1,
-          boxShadow: isRecording
-            ? '0 0 0 0px rgba(108,99,255,0.6), 0 0 40px rgba(108,99,255,0.4)'
-            : '0 0 0 0px rgba(108,99,255,0)',
+          scale: isRecording ? 1.06 : 1,
+          boxShadow: buttonShadow,
         }}
-        whileTap={{ scale: 0.95 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        whileTap={{ scale: 0.93 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 22 }}
         style={{
-          width: 80,
-          height: 80,
+          width: 76,
+          height: 76,
           borderRadius: '50%',
-          background: isRecording
-            ? 'linear-gradient(135deg, #ef4444, #f97316)'
-            : 'linear-gradient(135deg, #6c63ff, #a78bfa)',
+          background: buttonBg,
           border: 'none',
           cursor: isProcessing ? 'default' : 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           position: 'relative',
-          overflow: 'hidden',
+          overflow: 'visible',
         }}
       >
+        {isRecording && <RecordingRipple />}
         <AnimatePresence mode="wait">
           {isProcessing ? (
             <motion.div
               key="loader"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1, rotate: 360 }}
-              transition={{ rotate: { duration: 1, repeat: Infinity, ease: 'linear' } }}
+              initial={{ opacity: 0, scale: 0.6 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              style={{ display: 'flex' }}
             >
-              <Loader2 size={32} color="#fff" />
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+              >
+                <Loader2 size={30} color="#fff" />
+              </motion.div>
             </motion.div>
           ) : isRecording ? (
-            <motion.div key="stop" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <MicOff size={32} color="#fff" />
+            <motion.div
+              key="stop"
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <MicOff size={30} color="#fff" />
             </motion.div>
           ) : (
-            <motion.div key="mic" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Mic size={32} color="#fff" />
+            <motion.div
+              key="mic"
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Mic size={30} color="#fff" />
             </motion.div>
           )}
         </AnimatePresence>
-
-        {isRecording && <RecordingRipple />}
       </motion.button>
 
       <AnimatePresence mode="wait">
         <motion.p
           key={state}
-          initial={{ opacity: 0, y: 4 }}
+          initial={{ opacity: 0, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          style={{ fontSize: '13px', color: 'rgba(240,240,245,0.5)', textAlign: 'center' }}
+          exit={{ opacity: 0, y: -5 }}
+          transition={{ duration: 0.18 }}
+          style={{
+            fontSize: '13px',
+            color: 'var(--text-tertiary)',
+            textAlign: 'center',
+            fontWeight: 400,
+          }}
         >
           {state === 'idle' && 'Нажмите и скажите команду'}
-          {state === 'recording' && 'Говорите... нажмите для остановки'}
+          {state === 'recording' && 'Говорите… нажмите для остановки'}
           {state === 'processing' && 'Распознаём...'}
         </motion.p>
       </AnimatePresence>
@@ -181,17 +201,23 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
 function RecordingRipple() {
   return (
     <>
-      {[1, 2, 3].map((i) => (
+      {[0, 1, 2].map((i) => (
         <motion.div
           key={i}
           style={{
             position: 'absolute',
             inset: 0,
             borderRadius: '50%',
-            border: '2px solid rgba(255,255,255,0.4)',
+            border: '1.5px solid rgba(255,100,80,0.50)',
+            pointerEvents: 'none',
           }}
-          animate={{ scale: [1, 1.8 + i * 0.3], opacity: [0.6, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.4, ease: 'easeOut' }}
+          animate={{ scale: [1, 2.0 + i * 0.25], opacity: [0.5, 0] }}
+          transition={{
+            duration: 1.6,
+            repeat: Infinity,
+            delay: i * 0.45,
+            ease: 'easeOut',
+          }}
         />
       ))}
     </>

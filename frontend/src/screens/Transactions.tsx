@@ -120,7 +120,7 @@ export function Transactions() {
             gap: '8px',
             background: 'rgba(255,255,255,0.05)',
             border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '12px',
+            borderRadius: 'var(--radius-panel)',
             padding: '10px 14px',
             marginBottom: '12px',
           }}
@@ -141,12 +141,12 @@ export function Transactions() {
               onClick={() => setFilterType(f.value)}
               style={{
                 padding: '7px 16px',
-                borderRadius: '20px',
+                borderRadius: 'var(--radius-panel)',
                 fontSize: '13px',
                 fontWeight: 600,
-                border: `1px solid ${filterType === f.value ? 'rgba(108,99,255,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                background: filterType === f.value ? 'rgba(108,99,255,0.2)' : 'rgba(255,255,255,0.04)',
-                color: filterType === f.value ? 'var(--accent-light)' : 'rgba(240,240,245,0.5)',
+                border: `1px solid ${filterType === f.value ? 'rgba(48,209,88,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                background: filterType === f.value ? 'var(--accent-dim)' : 'rgba(255,255,255,0.04)',
+                color: filterType === f.value ? 'var(--accent)' : 'rgba(240,240,245,0.5)',
                 cursor: 'pointer',
               }}
             >
@@ -228,9 +228,9 @@ export function Transactions() {
             disabled={loadingMore}
             style={{
               padding: '10px 28px',
-              borderRadius: '14px',
-              border: '1px solid rgba(108,99,255,0.3)',
-              background: 'rgba(108,99,255,0.15)',
+              borderRadius: 'var(--radius-panel)',
+              border: '1px solid rgba(48,209,88,0.3)',
+              background: 'var(--accent-dim)',
               color: 'var(--accent-light)',
               fontSize: '14px',
               fontWeight: 600,
@@ -305,7 +305,7 @@ function TransactionItem({
             style={{
               width: 38,
               height: 38,
-              borderRadius: '11px',
+              borderRadius: 'var(--radius-md)',
               background: `${t.category?.color || '#71717a'}20`,
               display: 'flex',
               alignItems: 'center',

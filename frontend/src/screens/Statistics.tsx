@@ -139,8 +139,8 @@ export function Statistics() {
                 borderRadius: '10px',
                 fontSize: '13px',
                 fontWeight: 600,
-                border: `1px solid ${period === p.value ? 'rgba(108,99,255,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                background: period === p.value ? 'rgba(108,99,255,0.2)' : 'rgba(255,255,255,0.04)',
+                border: `1px solid ${period === p.value ? 'rgba(48,209,88,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                background: period === p.value ? 'var(--accent-dim)' : 'rgba(255,255,255,0.04)',
                 color: period === p.value ? 'var(--accent-light)' : 'rgba(240,240,245,0.5)',
                 cursor: 'pointer',
               }}
@@ -186,8 +186,8 @@ export function Statistics() {
                   borderRadius: '10px',
                   fontSize: '12px',
                   fontWeight: 600,
-                  border: `1px solid ${chartTab === t.value ? 'rgba(108,99,255,0.5)' : 'rgba(255,255,255,0.08)'}`,
-                  background: chartTab === t.value ? 'rgba(108,99,255,0.2)' : 'rgba(255,255,255,0.04)',
+                  border: `1px solid ${chartTab === t.value ? 'rgba(48,209,88,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                  background: chartTab === t.value ? 'var(--accent-dim)' : 'rgba(255,255,255,0.04)',
                   color: chartTab === t.value ? 'var(--accent-light)' : 'rgba(240,240,245,0.5)',
                   cursor: 'pointer',
                 }}

@@ -19,18 +19,19 @@ export function BottomNav() {
     <nav
       style={{
         position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 'calc(var(--nav-height) + var(--safe-bottom))',
-        paddingBottom: 'var(--safe-bottom)',
-        background: 'rgba(10, 10, 15, 0.85)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        borderTop: '1px solid rgba(255,255,255,0.06)',
+        bottom: 'calc(12px + var(--safe-bottom))',
+        left: '14px',
+        right: '14px',
+        height: '64px',
+        background: 'rgba(8, 8, 8, 0.52)',
+        backdropFilter: 'blur(64px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(64px) saturate(180%)',
+        borderRadius: 'var(--radius-pill)',
+        border: '1px solid rgba(255,255,255,0.09)',
+        boxShadow: '0 1px 0 rgba(255,255,255,0.09) inset, 0 16px 48px rgba(0,0,0,0.55)',
         display: 'flex',
-        alignItems: 'flex-start',
-        paddingTop: '8px',
+        alignItems: 'center',
+        padding: '0 8px',
         zIndex: 100,
       }}
     >
@@ -42,47 +43,52 @@ export function BottomNav() {
             onClick={() => navigate(path)}
             style={{
               flex: 1,
+              height: '48px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '4px',
+              justifyContent: 'center',
+              gap: '3px',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              padding: '4px 0',
+              borderRadius: '24px',
               position: 'relative',
             }}
           >
+            {active && (
+              <motion.div
+                layoutId="nav-pill"
+                style={{
+                  position: 'absolute',
+                  inset: '2px 4px',
+                  borderRadius: '22px',
+                  background: 'rgba(48, 209, 88, 0.18)',
+                  border: '1px solid rgba(48,209,88,0.28)',
+                  boxShadow: '0 0 12px rgba(48,209,88,0.18)',
+                }}
+                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+              />
+            )}
             <motion.div
-              animate={{ scale: active ? 1.1 : 1 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              style={{ position: 'relative' }}
+              animate={{ scale: active ? 1.08 : 1, y: active ? -1 : 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+              style={{ position: 'relative', zIndex: 1 }}
             >
-              {active && (
-                <motion.div
-                  layoutId="nav-indicator"
-                  style={{
-                    position: 'absolute',
-                    inset: '-6px',
-                    borderRadius: '12px',
-                    background: 'rgba(108, 99, 255, 0.2)',
-                  }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                />
-              )}
               <Icon
-                size={22}
-                color={active ? '#a78bfa' : 'rgba(240,240,245,0.35)'}
+                size={20}
+                color={active ? '#30d158' : 'rgba(255,255,255,0.28)'}
                 strokeWidth={active ? 2.2 : 1.8}
-                style={{ position: 'relative', zIndex: 1 }}
               />
             </motion.div>
             <span
               style={{
-                fontSize: '10px',
+                fontSize: '9px',
                 fontWeight: active ? 600 : 400,
-                color: active ? '#a78bfa' : 'rgba(240,240,245,0.35)',
-                letterSpacing: '0.01em',
+                color: active ? '#30d158' : 'rgba(255,255,255,0.25)',
+                letterSpacing: '0.02em',
+                position: 'relative',
+                zIndex: 1,
               }}
             >
               {label}

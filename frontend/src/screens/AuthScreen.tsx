@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import WebApp from '@twa-dev/sdk';
 import { authApi, categoriesApi } from '../api/client.ts';
 import { useAppStore } from '../store/index.ts';
@@ -8,7 +8,6 @@ export function AuthScreen() {
   const { setToken, setUser, setCategories } = useAppStore();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
@@ -16,18 +15,16 @@ export function AuthScreen() {
       setError(null);
       setLoading(true);
       try {
-        // WebApp methods only work inside Telegram — wrap safely
         try {
           WebApp.ready();
           WebApp.expand();
-          WebApp.setHeaderColor('#0a0a0f');
-          WebApp.setBackgroundColor('#0a0a0f');
+          WebApp.setHeaderColor('#09090f');
+          WebApp.setBackgroundColor('#09090f');
         } catch {
           // Running in a regular browser — ignore Telegram SDK errors
         }
 
         const initData = WebApp.initData || 'dev';
-
         const { data } = await authApi.login(initData);
         setToken(data.token);
         setUser(data.user);
@@ -60,55 +57,121 @@ export function AuthScreen() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '16px',
-        padding: '20px',
+        gap: '20px',
+        padding: '32px',
         background: 'var(--bg-primary)',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
-      {loading ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}
-        >
+      {/* Ambient orbs */}
+      <div style={{
+        position: 'absolute', top: '-20%', right: '-20%',
+        width: '70vw', height: '70vw', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(48,209,88,0.14) 0%, transparent 65%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '-10%', left: '-20%',
+        width: '55vw', height: '55vw', borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(48,209,88,0.08) 0%, transparent 65%)',
+        pointerEvents: 'none',
+      }} />
+
+      <AnimatePresence mode="wait">
+        {loading ? (
           <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+            key="loading"
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.85 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}
+          >
+            {/* Spinner ring */}
+            <div style={{ position: 'relative', width: 64, height: 64 }}>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '50%',
+                  border: '2.5px solid rgba(48,209,88,0.15)',
+                  borderTopColor: '#30d158',
+                  borderRightColor: '#4ade80',
+                }}
+              />
+              <div style={{
+                position: 'absolute',
+                inset: '10px',
+                borderRadius: '50%',
+                background: 'rgba(48,209,88,0.08)',
+                backdropFilter: 'blur(10px)',
+              }} />
+            </div>
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '14px', fontWeight: 500 }}>
+              Загрузка...
+            </p>
+          </motion.div>
+        ) : error ? (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 26 }}
             style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '16px',
+              textAlign: 'center',
+              position: 'relative',
+              zIndex: 1,
+            }}
+          >
+            <div style={{
               width: 60,
               height: 60,
               borderRadius: '50%',
-              border: '3px solid rgba(108,99,255,0.2)',
-              borderTopColor: '#6c63ff',
-            }}
-          />
-          <p style={{ color: 'rgba(240,240,245,0.5)', fontSize: '14px' }}>Загрузка...</p>
-        </motion.div>
-      ) : error ? (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ textAlign: 'center' }}
-        >
-          <div style={{ fontSize: '40px', marginBottom: '12px' }}>⚠️</div>
-          <p style={{ color: 'var(--expense)', fontWeight: 600, marginBottom: '16px' }}>{error}</p>
-          <button
-            onClick={() => setRetryKey((k) => k + 1)}
-            style={{
-              padding: '10px 24px',
-              borderRadius: '12px',
-              background: '#6c63ff',
+              background: 'rgba(255,69,58,0.12)',
+              border: '1px solid rgba(255,69,58,0.22)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '28px',
+            }}>
+              ⚠️
+            </div>
+            <p style={{
+              color: 'var(--expense)',
+              fontWeight: 600,
+              fontSize: '15px',
+              maxWidth: '240px',
+              lineHeight: 1.5,
+            }}>
+              {error}
+            </p>
+            <button
+              onClick={() => setRetryKey((k) => k + 1)}
+              style={{
+                padding: '12px 28px',
+                borderRadius: 'var(--radius-pill)',
+              background: 'linear-gradient(135deg, #26b84a, #30d158)',
               color: '#fff',
-              border: 'none',
-              fontSize: '14px',
+              border: '1px solid rgba(74,222,128,0.30)',
+              fontSize: '15px',
               fontWeight: 600,
               cursor: 'pointer',
-            }}
-          >
-            Попробовать снова
-          </button>
-        </motion.div>
-      ) : null}
+              boxShadow: '0 4px 16px rgba(48,209,88,0.35), 0 1px 0 rgba(255,255,255,0.20) inset',
+              }}
+            >
+              Попробовать снова
+            </button>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

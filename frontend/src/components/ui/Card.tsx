@@ -21,7 +21,7 @@ export function Card({ children, className = '', padding = 'md', onClick, style,
       className={`glass-card ${className}`}
       style={{ padding: paddingMap[padding], ...style }}
       onClick={onClick}
-      whileTap={onClick ? { scale: 0.98 } : undefined}
+      whileTap={onClick ? { scale: 0.985 } : undefined}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       {...rest}
     >
