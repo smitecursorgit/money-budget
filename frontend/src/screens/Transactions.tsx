@@ -144,7 +144,7 @@ export function Transactions() {
                 borderRadius: 'var(--radius-panel)',
                 fontSize: '13px',
                 fontWeight: 600,
-                border: `1px solid ${filterType === f.value ? 'rgba(48,209,88,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                border: `1px solid ${filterType === f.value ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.08)'}`,
                 background: filterType === f.value ? 'var(--accent-dim)' : 'rgba(255,255,255,0.04)',
                 color: filterType === f.value ? 'var(--accent)' : 'rgba(240,240,245,0.5)',
                 cursor: 'pointer',
@@ -229,7 +229,7 @@ export function Transactions() {
             style={{
               padding: '10px 28px',
               borderRadius: 'var(--radius-panel)',
-              border: '1px solid rgba(48,209,88,0.3)',
+              border: '1px solid rgba(34,197,94,0.3)',
               background: 'var(--accent-dim)',
               color: 'var(--accent-light)',
               fontSize: '14px',

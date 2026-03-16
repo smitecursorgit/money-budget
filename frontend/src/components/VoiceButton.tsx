@@ -104,12 +104,12 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
   const isProcessing = state === 'processing';
 
   const buttonBg = isRecording
-    ? 'linear-gradient(135deg, #ff453a 0%, #ff6b35 100%)'
-    : 'linear-gradient(135deg, #26b84a 0%, #30d158 60%, #4ade80 100%)';
+    ? 'linear-gradient(135deg, #e63930 0%, #f55a2e 100%)'
+    : 'linear-gradient(135deg, #1eaa4f 0%, #22c55e 50%, #2dd96b 100%)';
 
   const buttonShadow = isRecording
-    ? '0 0 0 0px rgba(255,69,58,0.5), 0 8px 32px rgba(255,69,58,0.40), 0 1px 0 rgba(255,255,255,0.25) inset'
-    : '0 8px 32px rgba(48,209,88,0.35), 0 1px 0 rgba(255,255,255,0.25) inset';
+    ? '0 0 0 0px rgba(255,69,58,0.4), 0 8px 32px rgba(255,69,58,0.30), 0 1px 0 rgba(255,255,255,0.22) inset'
+    : '0 8px 32px rgba(34,197,94,0.28), 0 1px 0 rgba(255,255,255,0.22) inset';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
@@ -117,11 +117,17 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
         onClick={handleClick}
         disabled={isProcessing}
         animate={{
-          scale: isRecording ? 1.06 : 1,
+          scale: isRecording ? 1.04 : 1,
           boxShadow: buttonShadow,
+          opacity: isProcessing ? 0.92 : 1,
         }}
-        whileTap={{ scale: 0.93 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+        whileTap={{ scale: 0.94 }}
+        transition={{
+          type: 'spring',
+          stiffness: 260,
+          damping: 24,
+          mass: 0.8,
+        }}
         style={{
           width: 76,
           height: 76,
@@ -141,14 +147,15 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
           {isProcessing ? (
             <motion.div
               key="loader"
-              initial={{ opacity: 0, scale: 0.6 }}
+              initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
               style={{ display: 'flex' }}
             >
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
               >
                 <Loader2 size={30} color="#fff" />
               </motion.div>
@@ -156,18 +163,20 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
           ) : isRecording ? (
             <motion.div
               key="stop"
-              initial={{ opacity: 0, scale: 0.7 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               <MicOff size={30} color="#fff" />
             </motion.div>
           ) : (
             <motion.div
               key="mic"
-              initial={{ opacity: 0, scale: 0.7 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               <Mic size={30} color="#fff" />
             </motion.div>
@@ -178,10 +187,10 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
       <AnimatePresence mode="wait">
         <motion.p
           key={state}
-          initial={{ opacity: 0, y: 5 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -5 }}
-          transition={{ duration: 0.18 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
           style={{
             fontSize: '13px',
             color: 'var(--text-tertiary)',
@@ -208,15 +217,15 @@ function RecordingRipple() {
             position: 'absolute',
             inset: 0,
             borderRadius: '50%',
-            border: '1.5px solid rgba(255,100,80,0.50)',
+            border: '1.5px solid rgba(255,100,80,0.45)',
             pointerEvents: 'none',
           }}
-          animate={{ scale: [1, 2.0 + i * 0.25], opacity: [0.5, 0] }}
+          animate={{ scale: [1, 1.9 + i * 0.2], opacity: [0.45, 0] }}
           transition={{
-            duration: 1.6,
+            duration: 2,
             repeat: Infinity,
-            delay: i * 0.45,
-            ease: 'easeOut',
+            delay: i * 0.55,
+            ease: [0.22, 0.61, 0.36, 1],
           }}
         />
       ))}

@@ -297,7 +297,7 @@ function EntryEditCard({
 
   return (
     <div style={{
-      background: 'var(--accent-dim)', border: '1px solid rgba(48,209,88,0.3)',
+      background: 'var(--accent-dim)', border: '1px solid rgba(34,197,94,0.3)',
       borderRadius: '16px', padding: '14px',
     }}>
       <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
@@ -353,7 +353,7 @@ function EntryEditCard({
         </button>
         <button
           onClick={handleSave}
-          style={{ flex: 2, padding: '9px', borderRadius: '10px', background: 'var(--accent-dim)', border: '1px solid rgba(48,209,88,0.4)', color: 'var(--accent-light)', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
+          style={{ flex: 2, padding: '9px', borderRadius: '10px', background: 'var(--accent-dim)', border: '1px solid rgba(34,197,94,0.4)', color: 'var(--accent-light)', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
         >
           Готово
         </button>

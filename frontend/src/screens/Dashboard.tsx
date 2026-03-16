@@ -189,7 +189,7 @@ export function Dashboard() {
             style={{
               display: 'flex', alignItems: 'center', gap: '5px',
               background: 'var(--accent-dim)',
-              border: '1px solid rgba(48,209,88,0.28)',
+              border: '1px solid rgba(34,197,94,0.28)',
               borderRadius: 'var(--radius-pill)',
               padding: '6px 12px',
               color: 'var(--accent)',
@@ -210,8 +210,8 @@ export function Dashboard() {
       >
         <div
           style={{
-            background: 'linear-gradient(145deg, rgba(48,209,88,0.14) 0%, rgba(48,209,88,0.05) 50%, rgba(0,0,0,0) 100%)',
-            border: '1px solid rgba(48,209,88,0.20)',
+            background: 'linear-gradient(145deg, rgba(34,197,94,0.14) 0%, rgba(34,197,94,0.05) 50%, rgba(0,0,0,0) 100%)',
+            border: '1px solid rgba(34,197,94,0.20)',
             borderRadius: 'var(--radius-xl)',
             padding: '24px',
             position: 'relative',
@@ -230,7 +230,7 @@ export function Dashboard() {
               width: 160,
               height: 160,
               borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(48,209,88,0.16) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(34,197,94,0.16) 0%, transparent 70%)',
               pointerEvents: 'none',
             }}
           />
@@ -263,8 +263,8 @@ export function Dashboard() {
           <div style={{ display: 'flex', gap: '20px', marginTop: '18px' }}>
             <div style={{
               flex: 1,
-              background: 'rgba(48,209,88,0.10)',
-              border: '1px solid rgba(48,209,88,0.18)',
+              background: 'rgba(34,197,94,0.10)',
+              border: '1px solid rgba(34,197,94,0.18)',
               borderRadius: 'var(--radius-md)',
               padding: '10px 12px',
             }}>
@@ -389,7 +389,7 @@ export function Dashboard() {
               style={{
                 display: 'flex', alignItems: 'center', gap: '4px',
                 background: 'var(--accent-dim)',
-                border: '1px solid rgba(48,209,88,0.28)',
+                border: '1px solid rgba(34,197,94,0.28)',
                 borderRadius: 'var(--radius-pill)',
                 padding: '5px 12px',
                 color: 'var(--accent)',

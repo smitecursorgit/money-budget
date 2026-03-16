@@ -44,7 +44,7 @@ function AmbientBackground() {
           width: '75vw',
           height: '75vw',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(48,209,88,0.16) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(34,197,94,0.16) 0%, transparent 65%)',
         }}
       />
       {/* Bottom-left deep green orb */}
@@ -56,7 +56,7 @@ function AmbientBackground() {
           width: '65vw',
           height: '65vw',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(48,209,88,0.09) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(34,197,94,0.09) 0%, transparent 65%)',
         }}
       />
       {/* Center subtle green orb */}

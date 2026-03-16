@@ -68,13 +68,13 @@ export function AuthScreen() {
       <div style={{
         position: 'absolute', top: '-20%', right: '-20%',
         width: '70vw', height: '70vw', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(48,209,88,0.14) 0%, transparent 65%)',
+        background: 'radial-gradient(circle, rgba(34,197,94,0.14) 0%, transparent 65%)',
         pointerEvents: 'none',
       }} />
       <div style={{
         position: 'absolute', bottom: '-10%', left: '-20%',
         width: '55vw', height: '55vw', borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(48,209,88,0.08) 0%, transparent 65%)',
+        background: 'radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 65%)',
         pointerEvents: 'none',
       }} />
 
@@ -97,16 +97,16 @@ export function AuthScreen() {
                   position: 'absolute',
                   inset: 0,
                   borderRadius: '50%',
-                  border: '2.5px solid rgba(48,209,88,0.15)',
-                  borderTopColor: '#30d158',
-                  borderRightColor: '#4ade80',
+                  border: '2.5px solid rgba(34,197,94,0.14)',
+                  borderTopColor: '#22c55e',
+                  borderRightColor: '#2dd96b',
                 }}
               />
               <div style={{
                 position: 'absolute',
                 inset: '10px',
                 borderRadius: '50%',
-                background: 'rgba(48,209,88,0.08)',
+                background: 'rgba(34,197,94,0.08)',
                 backdropFilter: 'blur(10px)',
               }} />
             </div>
@@ -158,13 +158,13 @@ export function AuthScreen() {
               style={{
                 padding: '12px 28px',
                 borderRadius: 'var(--radius-pill)',
-              background: 'linear-gradient(135deg, #26b84a, #30d158)',
+              background: 'linear-gradient(135deg, #1eaa4f, #22c55e)',
               color: '#fff',
-              border: '1px solid rgba(74,222,128,0.30)',
+              border: '1px solid rgba(45,217,107,0.28)',
               fontSize: '15px',
               fontWeight: 600,
               cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(48,209,88,0.35), 0 1px 0 rgba(255,255,255,0.20) inset',
+              boxShadow: '0 4px 16px rgba(34,197,94,0.30), 0 1px 0 rgba(255,255,255,0.20) inset',
               }}
             >
               Попробовать снова

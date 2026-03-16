@@ -13,16 +13,16 @@
   --glass-border-hover: rgba(255, 255, 255, 0.18);
   --glass-shine: rgba(255, 255, 255, 0.13);
 
-  /* Accent — green */
-  --accent: #30d158;
-  --accent-light: #4ade80;
-  --accent-dim: rgba(48, 209, 88, 0.15);
-  --accent-glow: rgba(48, 209, 88, 0.30);
+  /* Accent — green (softer, easier on the eyes) */
+  --accent: #22c55e;
+  --accent-light: #34d970;
+  --accent-dim: rgba(34, 197, 94, 0.14);
+  --accent-glow: rgba(34, 197, 94, 0.25);
 
   /* Semantic */
-  --income: #30d158;
-  --income-bg: rgba(48, 209, 88, 0.12);
-  --income-glow: rgba(48, 209, 88, 0.28);
+  --income: #22c55e;
+  --income-bg: rgba(34, 197, 94, 0.12);
+  --income-glow: rgba(34, 197, 94, 0.22);
   --expense: #ff453a;
   --expense-bg: rgba(255, 69, 58, 0.12);
   --expense-glow: rgba(255, 69, 58, 0.28);

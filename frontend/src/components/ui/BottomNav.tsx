@@ -63,9 +63,9 @@ export function BottomNav() {
                   position: 'absolute',
                   inset: '2px 4px',
                   borderRadius: '22px',
-                  background: 'rgba(48, 209, 88, 0.18)',
-                  border: '1px solid rgba(48,209,88,0.28)',
-                  boxShadow: '0 0 12px rgba(48,209,88,0.18)',
+                  background: 'var(--accent-dim)',
+                  border: '1px solid rgba(34,197,94,0.28)',
+                  boxShadow: '0 0 12px var(--accent-glow)',
                 }}
                 transition={{ type: 'spring', stiffness: 380, damping: 32 }}
               />
@@ -77,7 +77,7 @@ export function BottomNav() {
             >
               <Icon
                 size={20}
-                color={active ? '#30d158' : 'rgba(255,255,255,0.28)'}
+                color={active ? 'var(--accent)' : 'rgba(255,255,255,0.28)'}
                 strokeWidth={active ? 2.2 : 1.8}
               />
             </motion.div>
@@ -85,7 +85,7 @@ export function BottomNav() {
               style={{
                 fontSize: '9px',
                 fontWeight: active ? 600 : 400,
-                color: active ? '#30d158' : 'rgba(255,255,255,0.25)',
+                color: active ? 'var(--accent)' : 'rgba(255,255,255,0.25)',
                 letterSpacing: '0.02em',
                 position: 'relative',
                 zIndex: 1,
