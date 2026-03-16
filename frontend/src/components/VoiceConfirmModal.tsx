@@ -71,7 +71,7 @@ export function VoiceConfirmModal({
         style={{
           position: 'fixed', inset: 0,
           background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
-          zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px 20px',
+          zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box',
         }}
         onClick={onClose}
       >
@@ -83,8 +83,8 @@ export function VoiceConfirmModal({
           onClick={(e) => e.stopPropagation()}
           style={{
             width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column',
-            background: 'rgba(20,20,30,0.97)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '24px', backdropFilter: 'blur(40px)', overflow: 'hidden',
+            background: 'rgba(8,8,8,0.98)', border: '1px solid rgba(255,255,255,0.09)',
+            borderRadius: 'var(--radius-panel)', backdropFilter: 'blur(40px)', overflow: 'hidden',
           }}
         >
           {/* Header */}
@@ -112,9 +112,11 @@ export function VoiceConfirmModal({
               minHeight: 0,
               overflowY: 'scroll',
               WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-y',
               padding: '12px 20px',
               paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
-              touchAction: 'pan-y',
+              WebkitTransform: 'translateZ(0)',
+              transform: 'translateZ(0)',
             }}
           >
             {entries.length === 0 ? (

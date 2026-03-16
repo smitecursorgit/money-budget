@@ -100,7 +100,7 @@ export function Settings() {
   const expenseCategories = categories.filter((c) => c.type === 'expense');
 
   return (
-    <div className="page" style={{ padding: '0 16px' }}>
+    <div className="page" style={{ paddingLeft: 16, paddingRight: 16 }}>
       <div style={{ paddingTop: '20px', marginBottom: '20px' }}>
         <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Настройки</h1>
       </div>
@@ -335,104 +335,135 @@ function CategoryModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px 20px' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
       onClick={onClose}
     >
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
+        exit={{ y: 100 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
-        style={{ width: '100%', maxHeight: '90vh', overflowY: 'auto', background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '20px', backdropFilter: 'blur(40px)' }}
+        style={{
+          width: '100%',
+          height: '85vh',
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'rgba(8,8,8,0.98)',
+          border: '1px solid rgba(255,255,255,0.09)',
+          borderRadius: 'var(--radius-panel)',
+          overflow: 'hidden',
+          backdropFilter: 'blur(40px)',
+          WebkitBackdropFilter: 'blur(40px)',
+        }}
       >
-        <h3 style={{ fontWeight: 700, marginBottom: '16px' }}>
-          {category ? 'Редактировать' : 'Новая'} категория
-        </h3>
-
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Название"
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
-        />
-
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-          {(['expense', 'income'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setType(t)}
-              style={{
-                flex: 1,
-                padding: '10px',
-                borderRadius: '12px',
-                border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(255,255,255,0.08)'}`,
-                background: type === t ? (t === 'income' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)') : 'rgba(255,255,255,0.04)',
-                color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(240,240,245,0.5)',
-                fontWeight: 600,
-                fontSize: '14px',
-                cursor: 'pointer',
-              }}
-            >
-              {t === 'income' ? 'Доход' : 'Расход'}
-            </button>
-          ))}
+        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <h3 style={{ fontWeight: 700, fontSize: '18px' }}>
+            {category ? 'Редактировать' : 'Новая'} категория
+          </h3>
         </div>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'scroll',
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
+            padding: '16px 20px',
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            WebkitTransform: 'translateZ(0)',
+            transform: 'translateZ(0)',
+          }}
+        >
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Название"
+            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
+          />
 
-        <p style={{ fontSize: '12px', color: 'rgba(240,240,245,0.4)', marginBottom: '8px' }}>Иконка</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
-          {EMOJI_LIST.map((e) => (
-            <button
-              key={e}
-              onClick={() => setIcon(e)}
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: '10px',
-                fontSize: '20px',
-                border: `2px solid ${icon === e ? 'var(--accent)' : 'transparent'}`,
-                background: icon === e ? 'var(--accent-dim)' : 'rgba(255,255,255,0.05)',
-                cursor: 'pointer',
-              }}
-            >
-              {e}
-            </button>
-          ))}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+            {(['expense', 'income'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setType(t)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '12px',
+                  border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(255,255,255,0.08)'}`,
+                  background: type === t ? (t === 'income' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)') : 'rgba(255,255,255,0.04)',
+                  color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(240,240,245,0.5)',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                }}
+              >
+                {t === 'income' ? 'Доход' : 'Расход'}
+              </button>
+            ))}
+          </div>
+
+          <p style={{ fontSize: '12px', color: 'rgba(240,240,245,0.4)', marginBottom: '8px' }}>Иконка</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+            {EMOJI_LIST.map((e) => (
+              <button
+                key={e}
+                onClick={() => setIcon(e)}
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: '10px',
+                  fontSize: '20px',
+                  border: `2px solid ${icon === e ? 'var(--accent)' : 'transparent'}`,
+                  background: icon === e ? 'var(--accent-dim)' : 'rgba(255,255,255,0.05)',
+                  cursor: 'pointer',
+                }}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+
+          <p style={{ fontSize: '12px', color: 'rgba(240,240,245,0.4)', marginBottom: '8px' }}>Цвет</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
+            {COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: '50%',
+                  background: c,
+                  border: `3px solid ${color === c ? '#fff' : 'transparent'}`,
+                  cursor: 'pointer',
+                }}
+              />
+            ))}
+          </div>
+
+          <input
+            type="text"
+            value={keywords}
+            onChange={(e) => setKeywords(e.target.value)}
+            placeholder="Ключевые слова через запятую (зп, salary...)"
+            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: error ? '12px' : '0' }}
+          />
+
+          {error && (
+            <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>
+          )}
         </div>
-
-        <p style={{ fontSize: '12px', color: 'rgba(240,240,245,0.4)', marginBottom: '8px' }}>Цвет</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
-          {COLORS.map((c) => (
-            <button
-              key={c}
-              onClick={() => setColor(c)}
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: '50%',
-                background: c,
-                border: `3px solid ${color === c ? '#fff' : 'transparent'}`,
-                cursor: 'pointer',
-              }}
-            />
-          ))}
-        </div>
-
-        <input
-          type="text"
-          value={keywords}
-          onChange={(e) => setKeywords(e.target.value)}
-          placeholder="Ключевые слова через запятую (зп, salary...)"
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '16px' }}
-        />
-
-        {error && (
-          <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>
-        )}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
-          <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>
-            {category ? 'Сохранить' : 'Создать'}
-          </Button>
+        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
+            <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>
+              {category ? 'Сохранить' : 'Создать'}
+            </Button>
+          </div>
         </div>
       </motion.div>
     </motion.div>

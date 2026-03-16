@@ -124,7 +124,7 @@ export function Statistics() {
   ];
 
   return (
-    <div className="page" style={{ padding: '0 16px' }}>
+    <div className="page" style={{ paddingLeft: 16, paddingRight: 16 }}>
       <div style={{ paddingTop: '20px', marginBottom: '16px' }}>
         <h1 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '16px' }}>Статистика</h1>
 
@@ -218,8 +218,8 @@ export function Statistics() {
                       />
                       <Tooltip
                         contentStyle={{
-                          background: 'rgba(20,20,30,0.95)',
-                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: 'rgba(8,8,8,0.98)',
+                          border: '1px solid rgba(255,255,255,0.09)',
                           borderRadius: '12px',
                           color: '#f0f0f5',
                         }}
@@ -256,8 +256,8 @@ export function Statistics() {
                       </Pie>
                       <Tooltip
                         contentStyle={{
-                          background: 'rgba(20,20,30,0.95)',
-                          border: '1px solid rgba(255,255,255,0.1)',
+                          background: 'rgba(8,8,8,0.98)',
+                          border: '1px solid rgba(255,255,255,0.09)',
                           borderRadius: '12px',
                           color: '#f0f0f5',
                         }}

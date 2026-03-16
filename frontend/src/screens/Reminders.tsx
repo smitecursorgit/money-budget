@@ -83,7 +83,7 @@ export function Reminders() {
   };
 
   return (
-    <div className="page" style={{ padding: '0 16px' }}>
+    <div className="page" style={{ paddingLeft: 16, paddingRight: 16 }}>
       <div style={{ paddingTop: '20px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Платежи</h1>
@@ -355,53 +355,84 @@ function ReminderFormModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px 20px' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
       onClick={onClose}
     >
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
+        exit={{ y: 100 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
-        style={{ width: '100%', background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '20px', backdropFilter: 'blur(40px)' }}
+        style={{
+          width: '100%',
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'rgba(8,8,8,0.98)',
+          border: '1px solid rgba(255,255,255,0.09)',
+          borderRadius: 'var(--radius-panel)',
+          overflow: 'hidden',
+          backdropFilter: 'blur(40px)',
+          WebkitBackdropFilter: 'blur(40px)',
+        }}
       >
-        <h3 style={{ fontWeight: 700, marginBottom: '16px' }}>{title}</h3>
-        <input
-          type="text"
-          value={reminderTitle}
-          onChange={(e) => setReminderTitle(e.target.value)}
-          placeholder="Название (например: Аренда)"
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
-        />
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Сумма (необязательно)"
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
-        />
-        <select
-          value={recurrence}
-          onChange={(e) => setRecurrence(e.target.value)}
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
+        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <h3 style={{ fontWeight: 700, fontSize: '18px' }}>{title}</h3>
+        </div>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'scroll',
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
+            padding: '16px 20px',
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            WebkitTransform: 'translateZ(0)',
+            transform: 'translateZ(0)',
+          }}
         >
-          {Object.entries(RECURRENCE_LABELS).map(([v, l]) => (
-            <option key={v} value={v}>{l}</option>
-          ))}
-        </select>
-        <input
-          type="date"
-          value={nextDate}
-          onChange={(e) => setNextDate(e.target.value)}
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: error ? '8px' : '16px' }}
-        />
-        {error && (
-          <div style={{ marginBottom: '12px', padding: '10px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', fontSize: '13px', color: '#f87171' }}>
-            {error}
+          <input
+            type="text"
+            value={reminderTitle}
+            onChange={(e) => setReminderTitle(e.target.value)}
+            placeholder="Название (например: Аренда)"
+            style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', marginBottom: '12px', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+          />
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Сумма (необязательно)"
+            style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', marginBottom: '12px', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+          />
+          <select
+            value={recurrence}
+            onChange={(e) => setRecurrence(e.target.value)}
+            style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', marginBottom: '12px', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+          >
+            {Object.entries(RECURRENCE_LABELS).map(([v, l]) => (
+              <option key={v} value={v}>{l}</option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={nextDate}
+            onChange={(e) => setNextDate(e.target.value)}
+            style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', marginBottom: error ? '12px' : '0', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
+          />
+          {error && (
+            <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', fontSize: '13px', color: '#f87171' }}>
+              {error}
+            </div>
+          )}
+        </div>
+        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
+            <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>Сохранить</Button>
           </div>
-        )}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
-          <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>Сохранить</Button>
         </div>
       </motion.div>
     </motion.div>

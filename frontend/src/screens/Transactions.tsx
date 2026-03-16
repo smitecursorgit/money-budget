@@ -108,7 +108,7 @@ export function Transactions() {
   const grouped = groupByDate(filtered);
 
   return (
-    <div className="page" style={{ padding: '0 16px' }}>
+    <div className="page" style={{ paddingLeft: 16, paddingRight: 16 }}>
       <div style={{ paddingTop: '20px', paddingBottom: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Операции</h1>
@@ -262,22 +262,25 @@ export function Transactions() {
         />
       )}
 
-      {showAddForm && (
-        <AddTransactionModal
-          categories={categories}
-          onClose={() => setShowAddForm(false)}
-          onSaved={load}
-        />
-      )}
-
-      {editTarget && (
-        <EditTransactionModal
-          transaction={editTarget}
-          categories={categories}
-          onClose={() => setEditTarget(null)}
-          onSaved={load}
-        />
-      )}
+      <AnimatePresence>
+        {showAddForm && (
+          <AddTransactionModal
+            key="add"
+            categories={categories}
+            onClose={() => setShowAddForm(false)}
+            onSaved={load}
+          />
+        )}
+        {editTarget && (
+          <EditTransactionModal
+            key={editTarget.id}
+            transaction={editTarget}
+            categories={categories}
+            onClose={() => setEditTarget(null)}
+            onSaved={load}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -425,71 +428,101 @@ function TransactionFormModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px 20px' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
       onClick={onClose}
     >
       <motion.div
         initial={{ y: 100 }}
         animate={{ y: 0 }}
+        exit={{ y: 100 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
-        style={{ width: '100%', background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '20px', backdropFilter: 'blur(40px)' }}
+        style={{
+          width: '100%',
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'rgba(8,8,8,0.98)',
+          border: '1px solid rgba(255,255,255,0.09)',
+          borderRadius: 'var(--radius-panel)',
+          overflow: 'hidden',
+          backdropFilter: 'blur(40px)',
+        }}
       >
-        <h3 style={{ fontWeight: 700, marginBottom: '16px' }}>{title}</h3>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-          {(['expense', 'income'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => { setType(t); setCategoryId(''); }}
-              style={{
-                flex: 1,
-                padding: '10px',
-                borderRadius: '12px',
-                border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(255,255,255,0.08)'}`,
-                background: type === t ? (t === 'income' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)') : 'rgba(255,255,255,0.04)',
-                color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(240,240,245,0.5)',
-                fontWeight: 600, fontSize: '14px', cursor: 'pointer',
-              }}
-            >
-              {t === 'income' ? '↑ Доход' : '↓ Расход'}
-            </button>
-          ))}
+        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <h3 style={{ fontWeight: 700, fontSize: '18px' }}>{title}</h3>
         </div>
-        <input
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Сумма"
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px', fontSize: '18px', fontWeight: 700 }}
-        />
-        <select
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'scroll',
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
+            padding: '16px 20px',
+            paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+            WebkitTransform: 'translateZ(0)',
+            transform: 'translateZ(0)',
+          }}
         >
-          <option value="">Без категории</option>
-          {filtered.map((cat) => <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>)}
-        </select>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
-        />
-        <input
-          type="text"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Заметка (необязательно)"
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: error ? '8px' : '16px' }}
-        />
-        {error && (
-          <div style={{ marginBottom: '12px', padding: '10px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', fontSize: '13px', color: '#f87171' }}>
-            {error}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+            {(['expense', 'income'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => { setType(t); setCategoryId(''); }}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '12px',
+                  border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(255,255,255,0.08)'}`,
+                  background: type === t ? (t === 'income' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)') : 'rgba(255,255,255,0.04)',
+                  color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(240,240,245,0.5)',
+                  fontWeight: 600, fontSize: '14px', cursor: 'pointer',
+                }}
+              >
+                {t === 'income' ? '↑ Доход' : '↓ Расход'}
+              </button>
+            ))}
           </div>
-        )}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
-          <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>Сохранить</Button>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Сумма"
+            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px', fontSize: '18px', fontWeight: 700 }}
+          />
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
+          >
+            <option value="">Без категории</option>
+            {filtered.map((cat) => <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>)}
+          </select>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
+          />
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Заметка (необязательно)"
+            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: error ? '8px' : '0' }}
+          />
+          {error && (
+            <div style={{ marginTop: '12px', padding: '10px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', fontSize: '13px', color: '#f87171' }}>
+              {error}
+            </div>
+          )}
+        </div>
+        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
+            <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>Сохранить</Button>
+          </div>
         </div>
       </motion.div>
     </motion.div>

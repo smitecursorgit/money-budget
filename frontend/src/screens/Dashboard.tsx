@@ -132,7 +132,7 @@ export function Dashboard() {
   };
 
   return (
-    <div className="page" style={{ padding: '0 16px' }}>
+    <div className="page" style={{ paddingLeft: 16, paddingRight: 16 }}>
 
       {/* ── Header ── */}
       <motion.div {...fadeUp} style={{ paddingTop: '24px', paddingBottom: '4px' }}>
@@ -492,60 +492,75 @@ function TransactionDetailModal({
           style={{
             width: '100%',
             maxWidth: 420,
-            maxHeight: '75vh',
+            maxHeight: '85vh',
+            display: 'flex',
+            flexDirection: 'column',
             background: 'var(--glass-bg)',
             border: '1px solid var(--glass-border)',
             borderRadius: 'var(--radius-panel)',
-            padding: '20px',
+            overflow: 'hidden',
             backdropFilter: 'blur(40px) saturate(180%)',
             WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-            overflow: 'hidden',
             boxShadow: '0 1px 0 var(--glass-shine) inset, 0 24px 48px rgba(0,0,0,0.4)',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <h3 style={{ fontWeight: 700, fontSize: '18px' }}>Операция</h3>
             <button onClick={onClose} style={{ background: 'none', padding: '6px', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
               <X size={22} />
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 'var(--radius-md)',
-                  background: `${color}22`,
-                  border: `1px solid ${color}44`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  flexShrink: 0,
-                }}
-              >
-                {icon}
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'scroll',
+              WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-y',
+              padding: '20px',
+              paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+              WebkitTransform: 'translateZ(0)',
+              transform: 'translateZ(0)',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 'var(--radius-md)',
+                    background: `${color}22`,
+                    border: `1px solid ${color}44`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '24px',
+                    flexShrink: 0,
+                  }}
+                >
+                  {icon}
+                </div>
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: '16px' }}>
+                    {t.category?.name || 'Без категории'}
+                  </p>
+                  <p style={{ fontSize: '28px', fontWeight: 800, color: isIncome ? 'var(--income)' : 'var(--expense)', letterSpacing: '-0.02em' }}>
+                    {isIncome ? '+' : '-'}{fmt(Number(t.amount))}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p style={{ fontWeight: 600, fontSize: '16px' }}>
-                  {t.category?.name || 'Без категории'}
-                </p>
-                <p style={{ fontSize: '28px', fontWeight: 800, color: isIncome ? 'var(--income)' : 'var(--expense)', letterSpacing: '-0.02em' }}>
-                  {isIncome ? '+' : '-'}{fmt(Number(t.amount))}
-                </p>
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <DetailRow label="Дата" value={new Date(t.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })} />
-              {t.note && <DetailRow label="Заметка" value={t.note} />}
-              <DetailRow label="Тип" value={isIncome ? 'Доход' : 'Расход'} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <DetailRow label="Дата" value={new Date(t.date).toLocaleDateString('ru', { day: 'numeric', month: 'long', year: 'numeric' })} />
+                {t.note && <DetailRow label="Заметка" value={t.note} />}
+                <DetailRow label="Тип" value={isIncome ? 'Доход' : 'Расход'} />
+              </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+          <div style={{ display: 'flex', gap: '10px', padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <button
               onClick={onClose}
               style={{
