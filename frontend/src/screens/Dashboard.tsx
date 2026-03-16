@@ -17,16 +17,22 @@ const fadeUp = {
 };
 
 const CACHE_KEY = 'dashboard_cache';
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+type CacheData = { summary: StatsSummary; transactions: Transaction[]; reminders: Reminder[]; cachedAt: number };
 
 function readCache(): { summary: StatsSummary; transactions: Transaction[]; reminders: Reminder[] } | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed: CacheData = JSON.parse(raw);
+    if (Date.now() - parsed.cachedAt > CACHE_TTL_MS) return null;
+    return parsed;
   } catch { return null; }
 }
 
 function writeCache(data: { summary: StatsSummary; transactions: Transaction[]; reminders: Reminder[] }) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, cachedAt: Date.now() })); } catch { /* ignore */ }
 }
 
 export function Dashboard() {
@@ -81,6 +87,11 @@ export function Dashboard() {
   }, [setTransactions]);
 
   const loadData = useCallback(async (isManual = false) => {
+    // Cancel any pending retry to prevent parallel chains
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
     if (isManual) {
       setRefreshing(true);
       setLoadError(false);
@@ -109,9 +120,7 @@ export function Dashboard() {
   }, [loadData]);
 
   const handleVoiceConfirm = async (entries: ParsedEntry[]) => {
-    for (const entry of entries) {
-      await saveVoiceEntry(entry, categories);
-    }
+    await Promise.allSettled(entries.map((entry) => saveVoiceEntry(entry, categories)));
     fetchData().catch(() => {});
   };
 

@@ -6,11 +6,13 @@ import { prisma } from '../lib/prisma';
 const router = Router();
 router.use(authMiddleware);
 
+const validDate = z.string().refine((s) => !isNaN(new Date(s).getTime()), { message: 'Invalid date' });
+
 const ReminderSchema = z.object({
   title: z.string().min(1).max(100),
   amount: z.number().positive().optional(),
   recurrence: z.enum(['once', 'daily', 'weekly', 'monthly', 'yearly']),
-  nextDate: z.string(),
+  nextDate: validDate,
 });
 
 router.get('/', async (req: Request, res: Response): Promise<void> => {
@@ -103,7 +105,7 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
 router.get('/upcoming', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const days = parseInt((req.query.days as string) || '7');
+    const days = Math.min(Math.max(parseInt((req.query.days as string) || '7') || 7, 1), 365);
     const until = new Date();
     until.setDate(until.getDate() + days);
 

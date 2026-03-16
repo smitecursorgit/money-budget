@@ -37,7 +37,6 @@ const TIMEZONES = [
   'Europe/Istanbul',
   // Asia & other
   'Asia/Dubai',
-  'Asia/Tashkent',
   'Asia/Karachi',
   'Asia/Kolkata',
   'Asia/Bangkok',
@@ -56,31 +55,45 @@ export function Settings() {
   const [periodStart, setPeriodStart] = useState(user?.periodStart || 1);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [showAddCategory, setShowAddCategory] = useState(false);
 
   const loadCategories = useCallback(async () => {
-    const { data } = await categoriesApi.list();
-    setCategories(data);
+    try {
+      const { data } = await categoriesApi.list();
+      setCategories(data);
+    } catch {
+      // Categories remain from store cache, not critical
+    }
   }, [setCategories]);
 
   useEffect(() => { loadCategories(); }, [loadCategories]);
 
   const saveSettings = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       const { data } = await settingsApi.update({ currency, timezone, periodStart });
       setUser({ ...user!, ...data });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch {
+      setSaveError('Не удалось сохранить настройки. Попробуйте ещё раз.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
-    await categoriesApi.remove(id);
-    setCategories(categories.filter((c) => c.id !== id));
+    setDeleteError(null);
+    try {
+      await categoriesApi.remove(id);
+      setCategories(categories.filter((c) => c.id !== id));
+    } catch {
+      setDeleteError('Не удалось удалить категорию. Попробуйте ещё раз.');
+    }
   };
 
   const incomeCategories = categories.filter((c) => c.type === 'income');
@@ -114,7 +127,7 @@ export function Settings() {
               onChange={(e) => setTimezone(e.target.value)}
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '6px 10px', color: 'var(--text-primary)', fontSize: '13px', maxWidth: '180px' }}
             >
-              {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz.replace('_', ' ')}</option>)}
+              {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>)}
             </select>
           </SettingRow>
 
@@ -137,6 +150,12 @@ export function Settings() {
         </Card>
 
         <div style={{ marginTop: '12px' }}>
+          {saveError && (
+            <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '8px', textAlign: 'center' }}>{saveError}</p>
+          )}
+          {deleteError && (
+            <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '8px', textAlign: 'center' }}>{deleteError}</p>
+          )}
           <Button variant="primary" fullWidth size="md" onClick={saveSettings} loading={saving}>
             {saved ? <><Check size={16} /> Сохранено!</> : 'Сохранить настройки'}
           </Button>
@@ -290,10 +309,12 @@ function CategoryModal({
   const [color, setColor] = useState(category?.color || '#6c63ff');
   const [keywords, setKeywords] = useState(category?.keywords.join(', ') || '');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
     setLoading(true);
+    setError(null);
     const kw = keywords.split(',').map((k) => k.trim()).filter(Boolean);
     try {
       if (category) {
@@ -302,6 +323,8 @@ function CategoryModal({
         await categoriesApi.create({ name, type, icon, color, keywords: kw });
       }
       onSaved();
+    } catch {
+      setError('Не удалось сохранить категорию. Попробуйте ещё раз.');
     } finally {
       setLoading(false);
     }
@@ -402,6 +425,9 @@ function CategoryModal({
           style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '16px' }}
         />
 
+        {error && (
+          <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>
+        )}
         <div style={{ display: 'flex', gap: '10px' }}>
           <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
           <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>

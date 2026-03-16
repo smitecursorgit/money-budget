@@ -36,14 +36,13 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         return;
       }
       if (!telegramData) {
-        console.error('initData hash mismatch. initData preview:', initData.slice(0, 100));
         res.status(401).json({ error: 'Invalid initData' });
         return;
       }
 
-      // Reject initData older than 24 hours (replay attack protection)
+      // Reject initData older than 1 hour (replay attack protection)
       const authDate = parseInt(telegramData['auth_date'] || '0', 10);
-      if (!authDate || Date.now() / 1000 - authDate > 86400) {
+      if (!authDate || Date.now() / 1000 - authDate > 3600) {
         res.status(401).json({ error: 'initData expired. Please reopen the app.' });
         return;
       }
@@ -87,7 +86,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = jwt.sign(
-      { userId: user.id, telegramId: tgUser.id },
+      { userId: user.id, telegramId: String(tgUser.id) },
       process.env.JWT_SECRET!,
       { expiresIn: '30d' }
     );

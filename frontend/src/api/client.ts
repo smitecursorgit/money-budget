@@ -2,6 +2,8 @@ import axios from 'axios';
 
 const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
+let loggingOut = false;
+
 export const api = axios.create({
   baseURL: BASE_URL,
   timeout: 30000,
@@ -16,8 +18,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    // 401 — token expired or invalid, force re-auth
-    if (err.response?.status === 401) {
+    // 401 — token expired or invalid, force re-auth (guard against multiple parallel 401s)
+    if (err.response?.status === 401 && !loggingOut) {
+      loggingOut = true;
       localStorage.removeItem('token');
       window.location.reload();
       return Promise.reject(err);

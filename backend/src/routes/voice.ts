@@ -133,6 +133,11 @@ router.post('/parse-text', authMiddleware, async (req: Request, res: Response): 
     return;
   }
 
+  if (text.length > 1000) {
+    res.status(400).json({ error: 'Текст слишком длинный. Максимум 1000 символов.' });
+    return;
+  }
+
   try {
     const [categories, user] = await Promise.all([
       prisma.category.findMany({ where: { userId }, select: { name: true, type: true, keywords: true } }),

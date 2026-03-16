@@ -55,8 +55,12 @@ export function Reminders() {
   };
 
   const handleDelete = async (id: string): Promise<void> => {
-    await remindersApi.remove(id);
-    setReminders((prev) => prev.filter((r) => r.id !== id));
+    try {
+      await remindersApi.remove(id);
+      setReminders((prev) => prev.filter((r) => r.id !== id));
+    } catch {
+      setError('Не удалось удалить напоминание. Попробуйте ещё раз.');
+    }
   };
 
   const active = reminders.filter((r) => r.isActive);

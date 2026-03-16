@@ -6,12 +6,14 @@ import { prisma } from '../lib/prisma';
 const router = Router();
 router.use(authMiddleware);
 
+const validDate = z.string().refine((s) => !isNaN(new Date(s).getTime()), { message: 'Invalid date' });
+
 const CreateTransactionSchema = z.object({
   amount: z.number().positive(),
   type: z.enum(['income', 'expense']),
   categoryId: z.string().optional(),
-  date: z.string().optional(),
-  note: z.string().optional(),
+  date: validDate.optional(),
+  note: z.string().max(500).optional(),
 });
 
 const UpdateTransactionSchema = CreateTransactionSchema.partial();

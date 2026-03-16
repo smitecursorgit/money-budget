@@ -1,6 +1,19 @@
 import OpenAI from 'openai';
 import fs from 'fs';
+import { z } from 'zod';
 import { ParsedEntry } from '../types/index';
+
+const ParsedEntrySchema = z.object({
+  type: z.enum(['expense', 'income', 'reminder']),
+  amount: z.number().positive().nullable().optional(),
+  category: z.string().max(100).nullable().optional(),
+  date: z.string().nullable().optional(),
+  note: z.string().max(500).nullable().optional(),
+  reminderTitle: z.string().max(200).nullable().optional(),
+  reminderRecurrence: z.enum(['once', 'daily', 'weekly', 'monthly', 'yearly']).nullable().optional(),
+});
+
+const ParsedEntriesSchema = z.array(ParsedEntrySchema).min(1).max(10);
 
 // Groq uses OpenAI-compatible API — only baseURL and models differ.
 // Lazy-initialized to avoid throwing at module load time when GROQ_API_KEY is missing.
@@ -140,11 +153,11 @@ ${categoryList || 'Нет пользовательских категорий �
   const content = raw.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
 
   try {
-    const parsed = JSON.parse(content);
-    // Normalize: model should return array, but guard against single-object response
-    if (Array.isArray(parsed)) return parsed as ParsedEntry[];
-    return [parsed as ParsedEntry];
+    const raw = JSON.parse(content);
+    const normalized = Array.isArray(raw) ? raw : [raw];
+    const validated = ParsedEntriesSchema.parse(normalized);
+    return validated as ParsedEntry[];
   } catch {
-    return [{ type: 'expense', note: text }];
+    throw new Error('AI вернул некорректный ответ. Попробуйте сформулировать иначе.');
   }
 }

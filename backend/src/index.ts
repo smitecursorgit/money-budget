@@ -1,4 +1,15 @@
 import 'dotenv/config';
+
+// Validate required env vars at startup to fail fast
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required');
+  process.exit(1);
+}
+if (!process.env.TELEGRAM_BOT_TOKEN) {
+  console.error('FATAL: TELEGRAM_BOT_TOKEN environment variable is required');
+  process.exit(1);
+}
+
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -92,6 +103,14 @@ app.use('/settings', settingsRouter);
 
 // Telegram webhook endpoint (used in production instead of polling)
 app.post('/webhook/telegram', express.json(), (req, res) => {
+  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (webhookSecret) {
+    const incomingSecret = req.headers['x-telegram-bot-api-secret-token'];
+    if (incomingSecret !== webhookSecret) {
+      res.sendStatus(403);
+      return;
+    }
+  }
   const bot = getBot();
   if (bot) {
     bot.processUpdate(req.body);

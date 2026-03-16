@@ -14,12 +14,14 @@ type State = 'idle' | 'recording' | 'processing';
 export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
   const [state, setState] = useState<State>('idle');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
 
       // Pick best supported mimeType — try webm first (Chrome/Android), fall back to mp4 (iOS)
       const mimeType = [
@@ -30,7 +32,15 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
         'audio/mp4',
       ].find((m) => MediaRecorder.isTypeSupported(m)) || '';
 
-      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      let mediaRecorder: MediaRecorder;
+      try {
+        mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      } catch {
+        stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+        onError?.('Нет доступа к микрофону');
+        return;
+      }
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -65,6 +75,8 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
         }
       }, 60000);
     } catch {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
       onError?.('Нет доступа к микрофону');
     }
   }, [onResult, onError]);
@@ -79,8 +91,12 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
     }
   }, []);
 
-  // Clean up timer on unmount
-  useEffect(() => () => { if (maxTimerRef.current) clearTimeout(maxTimerRef.current); }, []);
+  // Clean up timer and microphone stream on unmount
+  useEffect(() => () => {
+    if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
+    if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+  }, []);
 
   // Tap-to-toggle: single click starts/stops recording.
   // No onPointerDown/Up to avoid double-trigger (pointerDown + click = two events).

@@ -27,6 +27,7 @@ export function Transactions() {
   const [search, setSearch] = useState('');
   const [showVoice, setShowVoice] = useState(false);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry[] } | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState((location.state as { openAdd?: boolean })?.openAdd === true);
   const [editTarget, setEditTarget] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,6 +55,7 @@ export function Transactions() {
 
   const loadMore = useCallback(async () => {
     setLoadingMore(true);
+    setLoadMoreError(null);
     const nextOffset = offset + PAGE_SIZE;
     try {
       const params: Record<string, string | number> = { limit: PAGE_SIZE, offset: nextOffset };
@@ -61,6 +63,8 @@ export function Transactions() {
       const { data } = await transactionsApi.list(params);
       setTransactions([...transactions, ...data.transactions], data.total);
       setOffset(nextOffset);
+    } catch {
+      setLoadMoreError('Не удалось загрузить. Попробуйте ещё раз.');
     } finally {
       setLoadingMore(false);
     }
@@ -78,9 +82,7 @@ export function Transactions() {
   };
 
   const handleVoiceConfirm = async (entries: ParsedEntry[]) => {
-    for (const entry of entries) {
-      await saveVoiceEntry(entry, categories);
-    }
+    await Promise.allSettled(entries.map((entry) => saveVoiceEntry(entry, categories)));
     await load();
   };
 
@@ -218,6 +220,9 @@ export function Transactions() {
           <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
             Показано {transactions.length} из {total}
           </p>
+          {loadMoreError && (
+            <p style={{ fontSize: '12px', color: '#ef4444' }}>{loadMoreError}</p>
+          )}
           <button
             onClick={loadMore}
             disabled={loadingMore}
@@ -520,11 +525,12 @@ function EditTransactionModal({ transaction: t, categories, onClose, onSaved }: 
 
 function groupByDate(transactions: Transaction[]): Record<string, Transaction[]> {
   const result: Record<string, Transaction[]> = {};
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
   for (const t of transactions) {
     const d = new Date(t.date);
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
 
     let label: string;
     if (d.toDateString() === today.toDateString()) label = 'Сегодня';

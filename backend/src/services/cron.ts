@@ -19,19 +19,19 @@ export function startCronJobs() {
 
       for (const reminder of dueReminders) {
         try {
-          // Update DB first — if notification fails, we at least don't re-fire next hour
+          // Send notification first — only advance the schedule if delivery succeeded
+          await sendReminderNotification(
+            Number(reminder.user.telegramId),
+            reminder.title,
+            reminder.amount ? Number(reminder.amount) : undefined
+          );
+
           const nextDate = computeNextDate(reminder.nextDate, reminder.recurrence);
           if (reminder.recurrence === 'once') {
             await prisma.reminder.update({ where: { id: reminder.id }, data: { isActive: false } });
           } else {
             await prisma.reminder.update({ where: { id: reminder.id }, data: { nextDate } });
           }
-
-          await sendReminderNotification(
-            Number(reminder.user.telegramId),
-            reminder.title,
-            reminder.amount ? Number(reminder.amount) : undefined
-          );
         } catch (err) {
           console.error(`Failed to process reminder ${reminder.id}:`, err);
         }
@@ -53,9 +53,13 @@ function computeNextDate(current: Date, recurrence: string): Date {
     case 'weekly':
       next.setDate(next.getDate() + 7);
       break;
-    case 'monthly':
+    case 'monthly': {
+      const originalDay = next.getDate();
       next.setMonth(next.getMonth() + 1);
+      // Clamp to last day of the new month if it overflowed (e.g. Jan 31 → Feb 28)
+      if (next.getDate() !== originalDay) next.setDate(0);
       break;
+    }
     case 'yearly':
       next.setFullYear(next.getFullYear() + 1);
       break;

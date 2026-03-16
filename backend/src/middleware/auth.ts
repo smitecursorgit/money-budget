@@ -20,7 +20,11 @@ export function verifyTelegramInitData(initData: string): Record<string, string>
   const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
   const expectedHash = crypto.createHmac('sha256', secretKey).update(sortedParams).digest('hex');
 
-  if (expectedHash !== hash) return null;
+  try {
+    if (!crypto.timingSafeEqual(Buffer.from(expectedHash, 'hex'), Buffer.from(hash, 'hex'))) return null;
+  } catch {
+    return null;
+  }
 
   const result: Record<string, string> = {};
   params.forEach((v, k) => (result[k] = v));
