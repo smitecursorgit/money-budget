@@ -28,23 +28,43 @@ function isRetryable(err: unknown): boolean {
     msg.includes('Connection refused') ||
     msg.includes('ECONNREFUSED') ||
     msg.includes('socket') ||
+    msg.includes('prepared statement') ||
     code === 'P2024' ||
     code === 'P2010'
   );
 }
 
 /**
- * Execute a Prisma operation with one automatic retry on connection errors.
- * Supabase/Render free-tier databases can drop idle connections.
+ * Global Prisma middleware: auto-retry ANY query once on connection errors.
+ * Protects every single Prisma call without manual wrapping.
+ */
+if (!globalForPrisma.prisma) {
+  client.$use(async (params, next) => {
+    try {
+      return await next(params);
+    } catch (err) {
+      if (isRetryable(err)) {
+        console.warn(`[prisma] ${params.model}.${params.action} ConnectorError — retrying...`);
+        await new Promise((r) => setTimeout(r, 1500));
+        try { await client.$connect(); } catch { /* reconnect */ }
+        return await next(params);
+      }
+      throw err;
+    }
+  });
+}
+
+/**
+ * Manual retry wrapper (kept for critical multi-query operations like Promise.all).
  */
 export async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err) {
     if (isRetryable(err)) {
-      console.warn('[prisma] ConnectorError — retrying in 1.5s...', (err as Error).message?.slice(0, 80));
+      console.warn('[prisma] withRetry — retrying batch...');
       await new Promise((r) => setTimeout(r, 1500));
-      try { await client.$connect(); } catch { /* ignore reconnect error */ }
+      try { await client.$connect(); } catch { /* ignore */ }
       return await fn();
     }
     throw err;
