@@ -5,6 +5,13 @@ export interface User {
   currency: string;
   timezone: string;
   periodStart: number;
+  currentBudgetId?: string;
+}
+
+export interface Budget {
+  id: string;
+  name: string;
+  initialBalance: number;
 }
 
 export interface Category {
@@ -51,6 +58,7 @@ export interface StatsSummary {
   income: number;
   expense: number;
   balance: number;
+  initialBalance?: number;
   period: { from: string; to: string };
 }
 

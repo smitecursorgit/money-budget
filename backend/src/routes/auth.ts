@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { verifyTelegramInitData } from '../middleware/auth';
+import { migrateUserToBudgets, getBudgetId } from '../lib/budget';
 
 const router = Router();
 
@@ -80,10 +81,19 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       },
     });
 
+    const budgetCount = await prisma.budget.count({ where: { userId: user.id } });
     const existingCategories = await prisma.category.count({ where: { userId: user.id } });
-    if (existingCategories === 0) {
+    if (budgetCount === 0 && existingCategories === 0) {
       await seedDefaultCategories(user.id);
+    } else if (budgetCount === 0) {
+      await migrateUserToBudgets(user.id);
     }
+
+    const budgets = await prisma.budget.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    const currentBudgetId = (await getBudgetId(user.id)) ?? undefined;
 
     const token = jwt.sign(
       { userId: user.id, telegramId: String(tgUser.id) },
@@ -100,7 +110,9 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         currency: user.currency,
         timezone: user.timezone,
         periodStart: user.periodStart,
+        currentBudgetId,
       },
+      budgets,
     });
   } catch (err) {
     console.error('Auth route error:', err);
@@ -109,6 +121,13 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 });
 
 async function seedDefaultCategories(userId: string) {
+  const budget = await prisma.budget.create({
+    data: { userId, name: 'Основной' },
+  });
+  await prisma.user.update({
+    where: { id: userId },
+    data: { currentBudgetId: budget.id },
+  });
   const defaults = [
     { name: 'Зарплата', type: 'income' as const, icon: '💼', color: '#22c55e', keywords: ['зп', 'зарплата', 'salary', 'оклад', 'аванс', 'получка', 'жалованье'] },
     { name: 'Фриланс', type: 'income' as const, icon: '💻', color: '#3b82f6', keywords: ['фриланс', 'подработка', 'халтура', 'шабашка', 'проект', 'заказ'] },
@@ -130,7 +149,7 @@ async function seedDefaultCategories(userId: string) {
   ];
 
   await prisma.category.createMany({
-    data: defaults.map((c) => ({ ...c, userId, isDefault: true })),
+    data: defaults.map((c) => ({ ...c, userId, budgetId: budget.id, isDefault: true })),
   });
 }
 

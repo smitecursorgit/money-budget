@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import { getBudgetId } from '../lib/budget';
 
 const router = Router();
 router.use(authMiddleware);
@@ -18,8 +19,10 @@ const ReminderSchema = z.object({
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
+    const budgetId = await getBudgetId(userId);
+    const where = budgetId ? { OR: [{ budgetId }, { userId, budgetId: null }] } : { userId };
     const reminders = await prisma.reminder.findMany({
-      where: { userId },
+      where,
       orderBy: { nextDate: 'asc' },
     });
     res.json(reminders);
@@ -32,6 +35,11 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
+    const budgetId = await getBudgetId(userId);
+    if (!budgetId) {
+      res.status(400).json({ error: 'Создайте профиль бюджета в настройках' });
+      return;
+    }
     const parse = ReminderSchema.safeParse(req.body);
     if (!parse.success) {
       res.status(400).json({ error: parse.error.flatten() });
@@ -39,7 +47,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     }
     const { title, amount, recurrence, nextDate } = parse.data;
     const reminder = await prisma.reminder.create({
-      data: { userId, title, amount, recurrence, nextDate: new Date(nextDate) },
+      data: { userId, budgetId, title, amount, recurrence, nextDate: new Date(nextDate) },
     });
     res.status(201).json(reminder);
   } catch (err) {
@@ -53,7 +61,10 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.userId;
     const { id } = req.params;
 
-    const existing = await prisma.reminder.findFirst({ where: { id, userId } });
+    const budgetId = await getBudgetId(userId);
+    const existing = await prisma.reminder.findFirst({
+      where: { id, userId, ...(budgetId ? { OR: [{ budgetId }, { budgetId: null }] } : {}) },
+    });
     if (!existing) {
       res.status(404).json({ error: 'Not found' });
       return;
@@ -88,7 +99,10 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.userId;
     const { id } = req.params;
 
-    const existing = await prisma.reminder.findFirst({ where: { id, userId } });
+    const budgetId = await getBudgetId(userId);
+    const existing = await prisma.reminder.findFirst({
+      where: { id, userId, ...(budgetId ? { OR: [{ budgetId }, { budgetId: null }] } : {}) },
+    });
     if (!existing) {
       res.status(404).json({ error: 'Not found' });
       return;
@@ -105,16 +119,16 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
 router.get('/upcoming', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
+    const budgetId = await getBudgetId(userId);
     const days = Math.min(Math.max(parseInt((req.query.days as string) || '7') || 7, 1), 365);
     const until = new Date();
     until.setDate(until.getDate() + days);
 
+    const where = budgetId
+      ? { OR: [{ budgetId }, { userId, budgetId: null }], isActive: true, nextDate: { lte: until } }
+      : { userId, isActive: true, nextDate: { lte: until } };
     const reminders = await prisma.reminder.findMany({
-      where: {
-        userId,
-        isActive: true,
-        nextDate: { lte: until },
-      },
+      where,
       orderBy: { nextDate: 'asc' },
     });
 

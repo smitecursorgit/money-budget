@@ -5,6 +5,7 @@ import fs from 'fs';
 import { authMiddleware } from '../middleware/auth';
 import { transcribeAudio, parseFinanceText } from '../services/ai';
 import { prisma } from '../lib/prisma';
+import { getBudgetId } from '../lib/budget';
 
 /**
  * Detect real audio format from magic bytes, fall back to original filename extension.
@@ -89,8 +90,10 @@ router.post('/parse', authMiddleware, uploadSingle, async (req: Request, res: Re
   }
 
   try {
+    const budgetId = await getBudgetId(userId);
+    const catWhere = budgetId ? { OR: [{ budgetId }, { userId, budgetId: null }] } : { userId };
     const categories = await prisma.category.findMany({
-      where: { userId },
+      where: catWhere,
       select: { name: true, type: true, keywords: true },
     });
 
@@ -139,8 +142,10 @@ router.post('/parse-text', authMiddleware, async (req: Request, res: Response): 
   }
 
   try {
+    const budgetId = await getBudgetId(userId);
+    const catWhere = budgetId ? { OR: [{ budgetId }, { userId, budgetId: null }] } : { userId };
     const [categories, user] = await Promise.all([
-      prisma.category.findMany({ where: { userId }, select: { name: true, type: true, keywords: true } }),
+      prisma.category.findMany({ where: catWhere, select: { name: true, type: true, keywords: true } }),
       prisma.user.findUnique({ where: { id: userId } }),
     ]);
 

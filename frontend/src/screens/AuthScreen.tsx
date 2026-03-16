@@ -5,7 +5,7 @@ import { authApi, categoriesApi } from '../api/client.ts';
 import { useAppStore } from '../store/index.ts';
 
 export function AuthScreen() {
-  const { setToken, setUser, setCategories } = useAppStore();
+  const { setToken, setUser, setCategories, setBudgets } = useAppStore();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [retryKey, setRetryKey] = useState(0);
@@ -28,6 +28,7 @@ export function AuthScreen() {
         const { data } = await authApi.login(initData);
         setToken(data.token);
         setUser(data.user);
+        if (data.budgets) setBudgets(data.budgets);
 
         const catRes = await categoriesApi.list();
         setCategories(catRes.data);
@@ -47,7 +48,7 @@ export function AuthScreen() {
     };
 
     authenticate();
-  }, [setToken, setUser, setCategories, retryKey]);
+  }, [setToken, setUser, setCategories, setBudgets, retryKey]);
 
   return (
     <div

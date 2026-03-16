@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
 import { VoiceButton } from '../components/VoiceButton.tsx';
 import { VoiceConfirmModal } from '../components/VoiceConfirmModal.tsx';
-import { statsApi, transactionsApi, remindersApi } from '../api/client.ts';
+import { statsApi, transactionsApi, remindersApi, budgetsApi } from '../api/client.ts';
 import { useAppStore, useTransactionStore, useStatsStore } from '../store/index.ts';
 import { ParsedEntry, StatsSummary, Reminder, Transaction } from '../types/index.ts';
 import { saveVoiceEntry } from '../utils/saveVoiceEntry.ts';
@@ -37,7 +37,7 @@ function writeCache(data: { summary: StatsSummary; transactions: Transaction[]; 
 }
 
 export function Dashboard() {
-  const { user, categories } = useAppStore();
+  const { user, categories, budgets } = useAppStore();
   const { transactions, setTransactions, addTransaction } = useTransactionStore();
   const invalidateStats = useStatsStore((s) => s.invalidateStats);
   const navigate = useNavigate();
@@ -48,6 +48,7 @@ export function Dashboard() {
   const recentTransactions = transactions.slice(0, 20);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry[] } | null>(null);
   const [detailTransaction, setDetailTransaction] = useState<Transaction | null>(null);
+  const [showBalanceEdit, setShowBalanceEdit] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -241,15 +242,23 @@ export function Dashboard() {
             <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontWeight: 500, marginBottom: '6px' }}>
               Баланс
             </p>
-            <p style={{
-              fontSize: '52px',
-              fontWeight: 800,
-              letterSpacing: '-0.03em',
-              color: '#fff',
-              lineHeight: 1.1,
-            }}>
+            <button
+              onClick={() => user?.currentBudgetId && setShowBalanceEdit(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: user?.currentBudgetId ? 'pointer' : 'default',
+                fontSize: '52px',
+                fontWeight: 800,
+                letterSpacing: '-0.03em',
+                color: '#fff',
+                lineHeight: 1.1,
+              }}
+              title={user?.currentBudgetId ? 'Нажмите чтобы изменить начальный баланс' : undefined}
+            >
               {summary ? fmt(summary.balance) : '—'}
-            </p>
+            </button>
           </div>
 
           <div style={{ display: 'flex', gap: '20px', marginTop: '18px' }}>
@@ -451,7 +460,143 @@ export function Dashboard() {
           />,
           document.body,
         )}
+
+      {showBalanceEdit && user?.currentBudgetId && (() => {
+        const cur = budgets.find((b) => b.id === user?.currentBudgetId);
+        return cur
+          ? createPortal(
+              <BalanceEditModal
+                budget={cur}
+                fmt={fmt}
+                onClose={() => setShowBalanceEdit(false)}
+                onSaved={async (initialBalance: number) => {
+                  await budgetsApi.update(cur.id, { initialBalance });
+                  setShowBalanceEdit(false);
+                  invalidateStats();
+                  fetchData().catch(() => {});
+                }}
+              />,
+              document.body,
+            )
+          : null;
+      })()}
     </div>
+  );
+}
+
+function BalanceEditModal({
+  budget,
+  fmt,
+  onClose,
+  onSaved,
+}: {
+  budget: { id: string; name: string; initialBalance: number };
+  fmt: (n: number) => string;
+  onClose: () => void;
+  onSaved: (initialBalance: number) => void | Promise<void>;
+}) {
+  const [val, setVal] = useState(String(Number(budget.initialBalance)));
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    const n = parseFloat(val.replace(/\s/g, '')) || 0;
+    setSaving(true);
+    try {
+      await onSaved(n);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.7)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 200,
+        display: 'flex',
+        alignItems: 'flex-end',
+        padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))',
+      }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          padding: '20px',
+          background: 'rgba(12,12,12,0.98)',
+          border: '1px solid rgba(255,255,255,0.09)',
+          borderRadius: 'var(--radius-panel)',
+        }}
+      >
+        <h3 style={{ fontWeight: 700, fontSize: '18px', marginBottom: '12px' }}>Начальный баланс</h3>
+        <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '12px' }}>
+          Профиль «{budget.name}»
+        </p>
+        <input
+          type="text"
+          inputMode="decimal"
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          placeholder="0"
+          style={{
+            width: '100%',
+            padding: '14px',
+            borderRadius: '12px',
+            marginBottom: '16px',
+            fontSize: '18px',
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: '#fff',
+          }}
+        />
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: '14px',
+              borderRadius: 'var(--radius-panel)',
+              background: 'rgba(255,255,255,0.07)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'var(--text-primary)',
+              fontSize: '15px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Отмена
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              flex: 1,
+              padding: '14px',
+              borderRadius: 'var(--radius-panel)',
+              background: 'var(--accent-dim)',
+              border: '1px solid rgba(34,197,94,0.3)',
+              color: 'var(--accent)',
+              fontSize: '15px',
+              fontWeight: 600,
+              cursor: saving ? 'wait' : 'pointer',
+            }}
+          >
+            {saving ? 'Сохранение...' : 'Сохранить'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

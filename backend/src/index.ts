@@ -26,6 +26,7 @@ process.on('uncaughtException', (err: Error) => {
 });
 
 import authRouter from './routes/auth';
+import budgetsRouter from './routes/budgets';
 import voiceRouter from './routes/voice';
 import transactionsRouter from './routes/transactions';
 import categoriesRouter from './routes/categories';
@@ -94,6 +95,7 @@ const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
 app.use('/auth', ...(isDev ? [] : [authLimiter]), authRouter);
+app.use('/budgets', budgetsRouter);
 app.use('/voice', ...(isDev ? [] : [voiceLimiter]), voiceRouter);
 app.use('/transactions', transactionsRouter);
 app.use('/categories', categoriesRouter);

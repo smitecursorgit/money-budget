@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import { getBudgetId } from '../lib/budget';
 
 const router = Router();
 router.use(authMiddleware);
@@ -21,9 +22,12 @@ const UpdateTransactionSchema = CreateTransactionSchema.partial();
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
+    const budgetId = await getBudgetId(userId);
     const { type, categoryId, from, to, limit = '200', offset = '0' } = req.query;
 
-    const where: Record<string, unknown> = { userId };
+    const where: Record<string, unknown> = budgetId
+      ? { OR: [{ budgetId }, { userId, budgetId: null }] }
+      : { userId };
     if (type) where['type'] = type;
     if (categoryId) where['categoryId'] = categoryId;
     if (from || to) {
@@ -54,6 +58,11 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
+    const budgetId = await getBudgetId(userId);
+    if (!budgetId) {
+      res.status(400).json({ error: 'Создайте профиль бюджета в настройках' });
+      return;
+    }
     const parse = CreateTransactionSchema.safeParse(req.body);
     if (!parse.success) {
       res.status(400).json({ error: parse.error.flatten() });
@@ -62,7 +71,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
     const { amount, type, categoryId, date, note } = parse.data;
     const transaction = await prisma.transaction.create({
-      data: { userId, amount, type, categoryId, date: date ? new Date(date) : new Date(), note },
+      data: { userId, budgetId, amount, type, categoryId, date: date ? new Date(date) : new Date(), note },
       include: { category: true },
     });
     res.status(201).json(transaction);
@@ -77,7 +86,10 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.userId;
     const { id } = req.params;
 
-    const existing = await prisma.transaction.findFirst({ where: { id, userId } });
+    const budgetId = await getBudgetId(userId);
+    const existing = await prisma.transaction.findFirst({
+      where: { id, userId, ...(budgetId ? { OR: [{ budgetId }, { budgetId: null }] } : {}) },
+    });
     if (!existing) {
       res.status(404).json({ error: 'Not found' });
       return;
@@ -113,7 +125,10 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.userId;
     const { id } = req.params;
 
-    const existing = await prisma.transaction.findFirst({ where: { id, userId } });
+    const budgetId = await getBudgetId(userId);
+    const existing = await prisma.transaction.findFirst({
+      where: { id, userId, ...(budgetId ? { OR: [{ budgetId }, { budgetId: null }] } : {}) },
+    });
     if (!existing) {
       res.status(404).json({ error: 'Not found' });
       return;

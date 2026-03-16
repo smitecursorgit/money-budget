@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
+import { getBudgetId } from '../lib/budget';
 
 const router = Router();
 router.use(authMiddleware);
@@ -49,6 +50,7 @@ function getCurrentPeriod(tz: string, periodStart: number): { dateFrom: Date; da
 router.get('/summary', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
+    const budgetId = await getBudgetId(userId);
     const fromParam = parseDate(req.query.from);
     const toParam = parseDate(req.query.to);
 
@@ -57,7 +59,10 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const [user, budget] = await Promise.all([
+      prisma.user.findUnique({ where: { id: userId } }),
+      budgetId ? prisma.budget.findUnique({ where: { id: budgetId } }) : null,
+    ]);
     const tz = user?.timezone || 'Europe/Moscow';
     const periodStart = user?.periodStart || 1;
 
@@ -71,24 +76,30 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
       ({ dateFrom, dateTo } = getCurrentPeriod(tz, periodStart));
     }
 
+    const txWhere = budgetId
+      ? { OR: [{ budgetId }, { userId, budgetId: null }], date: { gte: dateFrom, lt: dateTo } }
+      : { userId, date: { gte: dateFrom, lt: dateTo } };
+
     const [incomeAgg, expenseAgg] = await Promise.all([
       prisma.transaction.aggregate({
-        where: { userId, type: 'income', date: { gte: dateFrom, lt: dateTo } },
+        where: { ...txWhere, type: 'income' },
         _sum: { amount: true },
       }),
       prisma.transaction.aggregate({
-        where: { userId, type: 'expense', date: { gte: dateFrom, lt: dateTo } },
+        where: { ...txWhere, type: 'expense' },
         _sum: { amount: true },
       }),
     ]);
 
     const income = Number(incomeAgg._sum.amount ?? 0);
     const expense = Number(expenseAgg._sum.amount ?? 0);
+    const initialBalance = budget ? Number(budget.initialBalance) : 0;
 
     res.json({
       income,
       expense,
-      balance: income - expense,
+      balance: initialBalance + income - expense,
+      initialBalance,
       period: { from: dateFrom.toISOString(), to: dateTo.toISOString() },
     });
   } catch (err) {
@@ -100,6 +111,7 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
 router.get('/by-category', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
+    const budgetId = await getBudgetId(userId);
     const fromParam = parseDate(req.query.from);
     const toParam = parseDate(req.query.to);
 
@@ -111,7 +123,8 @@ router.get('/by-category', async (req: Request, res: Response): Promise<void> =>
     const { type } = req.query;
     const typeFilter = type === 'income' || type === 'expense' ? type : undefined;
 
-    const where: Record<string, unknown> = { userId };
+    const baseWhere = budgetId ? { OR: [{ budgetId }, { userId, budgetId: null }] } : { userId };
+    const where: Record<string, unknown> = { ...baseWhere };
     if (typeFilter) where['type'] = typeFilter;
     if (fromParam || toParam) {
       where['date'] = {
@@ -167,29 +180,33 @@ router.get('/by-category', async (req: Request, res: Response): Promise<void> =>
 router.get('/monthly', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
+    const budgetId = await getBudgetId(userId);
     const months = Math.min(Math.max(parseInt((req.query.months as string) || '6'), 1), 24);
 
-    const rows = await prisma.$queryRaw<
-      Array<{ month: string; income: string; expense: string }>
-    >`
-      SELECT
-        TO_CHAR(date, 'YYYY-MM') as month,
-        SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
-        SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
-      FROM transactions
-      WHERE user_id = ${userId}
-        AND date >= NOW() - (${months} * INTERVAL '1 month')
-      GROUP BY TO_CHAR(date, 'YYYY-MM')
-      ORDER BY month ASC
-    `;
+    const where = budgetId
+      ? { OR: [{ budgetId }, { userId, budgetId: null }], date: { gte: new Date(Date.now() - months * 30 * 24 * 60 * 60 * 1000) } }
+      : { userId, date: { gte: new Date(Date.now() - months * 30 * 24 * 60 * 60 * 1000) } };
 
-    res.json(
-      rows.map((r) => ({
-        month: r.month,
-        income: Number(r.income),
-        expense: Number(r.expense),
-      }))
-    );
+    const txs = await prisma.transaction.findMany({
+      where,
+      select: { date: true, type: true, amount: true },
+    });
+
+    const byMonth = new Map<string, { income: number; expense: number }>();
+    for (const t of txs) {
+      const month = t.date.toISOString().slice(0, 7);
+      if (!byMonth.has(month)) byMonth.set(month, { income: 0, expense: 0 });
+      const acc = byMonth.get(month)!;
+      const amt = Number(t.amount);
+      if (t.type === 'income') acc.income += amt;
+      else acc.expense += amt;
+    }
+
+    const rows = Array.from(byMonth.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, { income, expense }]) => ({ month, income, expense }));
+
+    res.json(rows);
   } catch (err) {
     console.error('Stats monthly error:', err);
     res.status(500).json({ error: 'Не удалось загрузить помесячную статистику' });

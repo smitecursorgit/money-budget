@@ -103,3 +103,12 @@ export const settingsApi = {
   update: (data: Partial<{ currency: string; timezone: string; periodStart: number }>) =>
     api.patch('/settings', data),
 };
+
+export const budgetsApi = {
+  list: () => api.get<import('../types').Budget[]>('/budgets'),
+  create: (data: { name: string }) => api.post('/budgets', data),
+  update: (id: string, data: Partial<{ name: string; initialBalance: number }>) =>
+    api.patch(`/budgets/${id}`, data),
+  select: (id: string) => api.post(`/budgets/${id}/select`),
+  remove: (id: string) => api.delete(`/budgets/${id}`),
+};

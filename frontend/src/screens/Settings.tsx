@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, ChevronRight, Check } from 'lucide-react';
 import { Card } from '../components/ui/Card.tsx';
 import { Button } from '../components/ui/Button.tsx';
-import { categoriesApi, settingsApi } from '../api/client.ts';
+import { categoriesApi, settingsApi, budgetsApi } from '../api/client.ts';
 import { useAppStore } from '../store/index.ts';
-import { Category } from '../types/index.ts';
+import { Category, Budget } from '../types/index.ts';
 
 const CURRENCIES = ['RUB', 'USD', 'EUR', 'GBP', 'KZT', 'UAH', 'BYN', 'TRY', 'AED', 'CNY', 'JPY'];
 const TIMEZONES = [
@@ -49,7 +49,7 @@ const EMOJI_LIST = ['💰', '🛒', '☕', '🚇', '🏠', '🍽️', '🎬', '�
 const COLORS = ['#6c63ff', '#22c55e', '#ef4444', '#f59e0b', '#3b82f6', '#ec4899', '#10b981', '#f97316', '#8b5cf6', '#06b6d4'];
 
 export function Settings() {
-  const { user, setUser, categories, setCategories } = useAppStore();
+  const { user, setUser, categories, setCategories, budgets, setBudgets } = useAppStore();
   const [currency, setCurrency] = useState(user?.currency || 'RUB');
   const [timezone, setTimezone] = useState(user?.timezone || 'Europe/Moscow');
   const [periodStart, setPeriodStart] = useState(user?.periodStart || 1);
@@ -59,6 +59,8 @@ export function Settings() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [showAddCategory, setShowAddCategory] = useState(false);
+  const [editBudget, setEditBudget] = useState<Budget | null>(null);
+  const [showAddBudget, setShowAddBudget] = useState(false);
 
   const loadCategories = useCallback(async () => {
     try {
@@ -69,7 +71,15 @@ export function Settings() {
     }
   }, [setCategories]);
 
+  const loadBudgets = useCallback(async () => {
+    try {
+      const { data } = await budgetsApi.list();
+      setBudgets(data);
+    } catch { /* ignore */ }
+  }, [setBudgets]);
+
   useEffect(() => { loadCategories(); }, [loadCategories]);
+  useEffect(() => { loadBudgets(); }, [loadBudgets]);
 
   const saveSettings = async () => {
     setSaving(true);
@@ -104,6 +114,78 @@ export function Settings() {
       <div style={{ paddingTop: '20px', marginBottom: '20px' }}>
         <h1 style={{ fontSize: '22px', fontWeight: 700 }}>Настройки</h1>
       </div>
+
+      {/* Профили бюджета */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '20px' }}>
+        <p className="section-title" style={{ padding: '0 4px', marginBottom: '10px' }}>Профили бюджета</p>
+        <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '10px', padding: '0 4px' }}>
+          Создайте несколько бюджетов (например: личный, семейный) и переключайтесь между ними.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {budgets.map((b) => (
+            <Card key={b.id} padding="sm">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px' }}>
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: '14px' }}>
+                    {b.name}
+                    {user?.currentBudgetId === b.id && (
+                      <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--accent)', fontWeight: 500 }}>• активен</span>
+                    )}
+                  </p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
+                    Начальный баланс: {Number(b.initialBalance || 0).toLocaleString('ru')} ₽
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button
+                    onClick={() => setEditBudget(b)}
+                    style={{ padding: '6px', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'rgba(240,240,245,0.5)' }}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  {budgets.length > 1 && (
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Удалить профиль? Данные не восстановить.')) return;
+                        try {
+                          await budgetsApi.remove(b.id);
+                          if (user?.currentBudgetId === b.id) {
+                            const next = budgets.find((x) => x.id !== b.id);
+                            if (next) await budgetsApi.select(next.id);
+                            const { data } = await budgetsApi.list();
+                            setBudgets(data);
+                            setUser({ ...user!, currentBudgetId: next?.id });
+                          }
+                          loadBudgets();
+                        } catch { setDeleteError('Не удалось удалить'); }
+                      }}
+                      style={{ padding: '6px', background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#ef4444' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                  {user?.currentBudgetId !== b.id && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await budgetsApi.select(b.id);
+                          setUser({ ...user!, currentBudgetId: b.id });
+                        } catch { /* ignore */ }
+                      }}
+                      style={{ padding: '6px 10px', background: 'var(--accent-dim)', border: '1px solid rgba(34,197,94,0.28)', borderRadius: '8px', cursor: 'pointer', color: 'var(--accent)', fontSize: '12px', fontWeight: 600 }}
+                    >
+                      Выбрать
+                    </button>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => setShowAddBudget(true)} style={{ marginTop: 10 }}>
+          <Plus size={16} /> Добавить профиль
+        </Button>
+      </motion.div>
 
       {/* General settings */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '20px' }}>
@@ -202,8 +284,108 @@ export function Settings() {
             onSaved={() => { loadCategories(); setEditCategory(null); setShowAddCategory(false); }}
           />
         )}
+        {(editBudget || showAddBudget) && (
+          <BudgetModal
+            budget={editBudget}
+            onClose={() => { setEditBudget(null); setShowAddBudget(false); }}
+            onSaved={() => { loadBudgets(); setEditBudget(null); setShowAddBudget(false); }}
+          />
+        )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function BudgetModal({ budget, onClose, onSaved }: { budget: Budget | null; onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(budget?.name || '');
+  const [initialBalance, setInitialBalance] = useState(String(budget ? Number(budget.initialBalance) : 0));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!name.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const bal = parseFloat(initialBalance.replace(/\s/g, '')) || 0;
+      if (budget) {
+        await budgetsApi.update(budget.id, { name, initialBalance: bal });
+      } else {
+        await budgetsApi.create({ name });
+        const { data } = await budgetsApi.list();
+        const created = data.find((b) => b.name === name);
+        if (created && bal !== 0) await budgetsApi.update(created.id, { initialBalance: bal });
+      }
+      onSaved();
+    } catch {
+      setError('Не удалось сохранить. Попробуйте ещё раз.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        exit={{ y: 100 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          background: 'rgba(8,8,8,0.98)',
+          border: '1px solid rgba(255,255,255,0.09)',
+          borderRadius: 'var(--radius-panel)',
+          overflow: 'hidden',
+          backdropFilter: 'blur(40px)',
+          WebkitBackdropFilter: 'blur(40px)',
+        }}
+      >
+        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <h3 style={{ fontWeight: 700, fontSize: '18px' }}>{budget ? 'Редактировать' : 'Новый'} профиль</h3>
+        </div>
+        <div style={{ padding: '16px 20px' }}>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Название (например: Личный, Семейный)"
+            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '12px' }}
+          />
+          {budget && (
+            <div>
+              <p style={{ fontSize: '12px', color: 'rgba(240,240,245,0.4)', marginBottom: '6px' }}>Начальный баланс</p>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={initialBalance}
+                onChange={(e) => setInitialBalance(e.target.value)}
+                placeholder="0"
+                style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '12px' }}
+              />
+            </div>
+          )}
+          {error && <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>}
+        </div>
+        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
+            <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>
+              {budget ? 'Сохранить' : 'Создать'}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
