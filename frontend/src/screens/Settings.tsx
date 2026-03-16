@@ -46,7 +46,7 @@ const TIMEZONES = [
   'America/Los_Angeles',
 ];
 const EMOJI_LIST = ['💰', '🛒', '☕', '🚇', '🏠', '🍽️', '🎬', '💊', '🚬', '📱', '📦', '💼', '💻', '🎮', '🏋️', '✈️', '🎓', '💈'];
-const COLORS = ['#6c63ff', '#22c55e', '#ef4444', '#f59e0b', '#3b82f6', '#ec4899', '#10b981', '#f97316', '#8b5cf6', '#06b6d4'];
+const COLORS = ['#6c63ff', '#ffffff', '#ef5350', '#ffa726', '#3b82f6', '#ec4899', '#10b981', '#f97316', '#8b5cf6', '#06b6d4'];
 
 export function Settings() {
   const { user, setUser, categories, setCategories, budgets, setBudgets } = useAppStore();
@@ -139,7 +139,7 @@ export function Settings() {
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <button
                     onClick={() => setEditBudget(b)}
-                    style={{ padding: '6px', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'rgba(240,240,245,0.5)' }}
+                    style={{ padding: '6px', background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: '999px', cursor: 'pointer', color: 'var(--text-secondary)' }}
                   >
                     <Pencil size={14} />
                   </button>
@@ -159,7 +159,7 @@ export function Settings() {
                           loadBudgets();
                         } catch { setDeleteError('Не удалось удалить'); }
                       }}
-                      style={{ padding: '6px', background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#ef4444' }}
+                      style={{ padding: '6px', background: 'rgba(239,83,80,0.1)', border: 'none', borderRadius: '999px', cursor: 'pointer', color: '#ef5350' }}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -172,7 +172,7 @@ export function Settings() {
                           setUser({ ...user!, currentBudgetId: b.id });
                         } catch { /* ignore */ }
                       }}
-                      style={{ padding: '6px 10px', background: 'var(--accent-dim)', border: '1px solid rgba(34,197,94,0.28)', borderRadius: '8px', cursor: 'pointer', color: 'var(--accent)', fontSize: '12px', fontWeight: 600 }}
+                      style={{ padding: '6px 12px', background: '#ffffff', border: 'none', borderRadius: '999px', cursor: 'pointer', color: '#000000', fontSize: '12px', fontWeight: 700, boxShadow: '0 2px 10px rgba(255,255,255,0.30)' }}
                     >
                       Выбрать
                     </button>
@@ -195,48 +195,48 @@ export function Settings() {
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '6px 10px', color: 'var(--text-primary)', fontSize: '14px' }}
+              style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '999px', padding: '6px 10px', color: 'var(--text-primary)', fontSize: '14px' }}
             >
               {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </SettingRow>
 
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '12px 0' }} />
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.09)', margin: '12px 0' }} />
 
           <SettingRow label="Часовой пояс">
             <select
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '8px', padding: '6px 10px', color: 'var(--text-primary)', fontSize: '13px', maxWidth: '180px' }}
+              style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '999px', padding: '6px 10px', color: 'var(--text-primary)', fontSize: '13px', maxWidth: '180px' }}
             >
               {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz.replace(/_/g, ' ')}</option>)}
             </select>
           </SettingRow>
 
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '12px 0' }} />
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.09)', margin: '12px 0' }} />
 
           <SettingRow label="Начало периода">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '14px', color: 'rgba(240,240,245,0.5)' }}>с</span>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>с</span>
               <input
                 type="number"
                 min={1}
                 max={28}
                 value={periodStart}
                 onChange={(e) => setPeriodStart(parseInt(e.target.value) || 1)}
-                style={{ width: '52px', padding: '6px', borderRadius: '8px', textAlign: 'center', fontSize: '14px' }}
+                style={{ width: '52px', padding: '6px', borderRadius: '999px', textAlign: 'center', fontSize: '14px' }}
               />
-              <span style={{ fontSize: '14px', color: 'rgba(240,240,245,0.5)' }}>числа</span>
+              <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>числа</span>
             </div>
           </SettingRow>
         </Card>
 
         <div style={{ marginTop: '12px' }}>
           {saveError && (
-            <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '8px', textAlign: 'center' }}>{saveError}</p>
+            <p style={{ color: 'var(--expense)', fontSize: '13px', marginBottom: '8px', textAlign: 'center' }}>{saveError}</p>
           )}
           {deleteError && (
-            <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '8px', textAlign: 'center' }}>{deleteError}</p>
+            <p style={{ color: 'var(--expense)', fontSize: '13px', marginBottom: '8px', textAlign: 'center' }}>{deleteError}</p>
           )}
           <Button variant="primary" fullWidth size="md" onClick={saveSettings} loading={saving}>
             {saved ? <><Check size={16} /> Сохранено!</> : 'Сохранить настройки'}
@@ -331,7 +331,7 @@ function BudgetModal({ budget, onClose, onSaved }: { budget: Budget | null; onCl
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
       onClick={onClose}
     >
       <motion.div
@@ -351,21 +351,19 @@ function BudgetModal({ budget, onClose, onSaved }: { budget: Budget | null; onCl
           width: '100%',
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(8,8,8,0.98)',
-          border: '1px solid rgba(255,255,255,0.09)',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-panel)',
           overflow: 'hidden',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
         }}
       >
         <div
           onPointerDown={(e) => dragControls.start(e)}
           style={{ paddingTop: '10px', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
         >
-          <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'rgba(255,255,255,0.25)' }} />
+          <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'var(--border)' }} />
         </div>
-        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid var(--divider)' }}>
           <h3 style={{ fontWeight: 700, fontSize: '18px' }}>{budget ? 'Редактировать' : 'Новый'} профиль</h3>
         </div>
         <div style={{ padding: '16px 20px' }}>
@@ -374,24 +372,24 @@ function BudgetModal({ budget, onClose, onSaved }: { budget: Budget | null; onCl
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Название (например: Личный, Семейный)"
-            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '12px' }}
+            style={{ width: '100%', padding: '12px', borderRadius: '999px', marginBottom: '12px' }}
           />
           {budget && (
             <div>
-              <p style={{ fontSize: '12px', color: 'rgba(240,240,245,0.4)', marginBottom: '6px' }}>Начальный баланс</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '6px' }}>Начальный баланс</p>
               <input
                 type="text"
                 inputMode="decimal"
                 value={initialBalance}
                 onChange={(e) => setInitialBalance(e.target.value)}
                 placeholder="0"
-                style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '12px' }}
+                style={{ width: '100%', padding: '12px', borderRadius: '999px', marginBottom: '12px' }}
               />
             </div>
           )}
-          {error && <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>}
+          {error && <p style={{ color: 'var(--expense)', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>}
         </div>
-        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid var(--divider)' }}>
           <div style={{ display: 'flex', gap: '10px' }}>
             <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
             <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>
@@ -432,7 +430,7 @@ function CategoryRow({
             style={{
               width: 34,
               height: 34,
-              borderRadius: '10px',
+              borderRadius: '999px',
               background: `${c.color}20`,
               display: 'flex',
               alignItems: 'center',
@@ -456,13 +454,13 @@ function CategoryRow({
             <>
               <button
                 onClick={() => onDelete(c.id)}
-                style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', cursor: 'pointer' }}
+                style={{ background: 'rgba(239,83,80,0.2)', color: '#ef5350', border: 'none', borderRadius: '999px', padding: '5px 10px', fontSize: '12px', cursor: 'pointer' }}
               >
                 Удалить
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
-                style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(240,240,245,0.5)', border: 'none', borderRadius: '8px', padding: '5px 10px', fontSize: '12px', cursor: 'pointer' }}
+                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: '999px', padding: '5px 10px', fontSize: '12px', cursor: 'pointer' }}
               >
                 Нет
               </button>
@@ -471,14 +469,14 @@ function CategoryRow({
             <>
               <button
                 onClick={() => onEdit(c)}
-                style={{ padding: '6px', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'rgba(240,240,245,0.5)' }}
+                style={{ padding: '6px', background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.16)', borderRadius: '999px', cursor: 'pointer', color: 'var(--text-secondary)' }}
               >
                 <Pencil size={14} />
               </button>
               {!c.isDefault && (
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  style={{ padding: '6px', background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#ef4444' }}
+                  style={{ padding: '6px', background: 'rgba(239,83,80,0.1)', border: 'none', borderRadius: '999px', cursor: 'pointer', color: '#ef5350' }}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -533,7 +531,7 @@ function CategoryModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
       onClick={onClose}
     >
       <motion.div
@@ -555,21 +553,19 @@ function CategoryModal({
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(8,8,8,0.98)',
-          border: '1px solid rgba(255,255,255,0.09)',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-panel)',
           overflow: 'hidden',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
         }}
       >
         <div
           onPointerDown={(e) => dragControls.start(e)}
           style={{ paddingTop: '10px', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
         >
-          <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'rgba(255,255,255,0.25)' }} />
+          <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'var(--border)' }} />
         </div>
-        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid var(--divider)' }}>
           <h3 style={{ fontWeight: 700, fontSize: '18px' }}>
             {category ? 'Редактировать' : 'Новая'} категория
           </h3>
@@ -592,7 +588,7 @@ function CategoryModal({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Название"
-            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
+            style={{ width: '100%', padding: '12px', borderRadius: '999px', marginBottom: '10px' }}
           />
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
@@ -603,10 +599,10 @@ function CategoryModal({
                 style={{
                   flex: 1,
                   padding: '10px',
-                  borderRadius: '12px',
-                  border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(255,255,255,0.08)'}`,
-                  background: type === t ? (t === 'income' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)') : 'rgba(255,255,255,0.04)',
-                  color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(240,240,245,0.5)',
+                  borderRadius: '999px',
+                  border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'var(--border)'}`,
+                  background: type === t ? (t === 'income' ? 'var(--income-bg)' : 'var(--expense-bg)') : 'var(--bg-surface)',
+                  color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'var(--text-secondary)',
                   fontWeight: 600,
                   fontSize: '14px',
                   cursor: 'pointer',
@@ -617,7 +613,7 @@ function CategoryModal({
             ))}
           </div>
 
-          <p style={{ fontSize: '12px', color: 'rgba(240,240,245,0.4)', marginBottom: '8px' }}>Иконка</p>
+          <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>Иконка</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
             {EMOJI_LIST.map((e) => (
               <button
@@ -626,10 +622,10 @@ function CategoryModal({
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: '10px',
+                  borderRadius: '999px',
                   fontSize: '20px',
                   border: `2px solid ${icon === e ? 'var(--accent)' : 'transparent'}`,
-                  background: icon === e ? 'var(--accent-dim)' : 'rgba(255,255,255,0.05)',
+                  background: icon === e ? 'var(--accent-dim)' : 'var(--bg-icon)',
                   cursor: 'pointer',
                 }}
               >
@@ -638,7 +634,7 @@ function CategoryModal({
             ))}
           </div>
 
-          <p style={{ fontSize: '12px', color: 'rgba(240,240,245,0.4)', marginBottom: '8px' }}>Цвет</p>
+          <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '8px' }}>Цвет</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '14px' }}>
             {COLORS.map((c) => (
               <button
@@ -661,14 +657,14 @@ function CategoryModal({
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
             placeholder="Ключевые слова через запятую (зп, salary...)"
-            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: error ? '12px' : '0' }}
+            style={{ width: '100%', padding: '12px', borderRadius: '999px', marginBottom: error ? '12px' : '0' }}
           />
 
           {error && (
-            <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>
+            <p style={{ color: 'var(--expense)', fontSize: '13px', marginBottom: '12px', textAlign: 'center' }}>{error}</p>
           )}
         </div>
-        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid var(--divider)' }}>
           <div style={{ display: 'flex', gap: '10px' }}>
             <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
             <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>

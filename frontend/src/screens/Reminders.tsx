@@ -77,8 +77,8 @@ export function Reminders() {
 
   const getUrgencyColor = (dateStr: string) => {
     const days = Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    if (days < 0) return '#ef4444';
-    if (days <= 3) return '#f59e0b';
+    if (days < 0) return '#ef5350';
+    if (days <= 3) return '#ffa726';
     return 'var(--text-tertiary)';
   };
 
@@ -229,15 +229,15 @@ function ReminderCard({
             style={{
               width: 40,
               height: 40,
-              borderRadius: '12px',
-              background: r.isActive ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.05)',
+              borderRadius: '999px',
+              background: 'var(--bg-icon)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               flexShrink: 0,
             }}
           >
-            <Bell size={18} color={r.isActive ? '#f59e0b' : 'rgba(240,240,245,0.3)'} />
+            <Bell size={18} color={r.isActive ? '#ffa726' : 'rgba(240,240,245,0.3)'} />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px' }}>{r.title}</p>
@@ -262,14 +262,14 @@ function ReminderCard({
                 <button
                   onClick={handleConfirmDelete}
                   disabled={deleting}
-                  style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', borderRadius: '8px', padding: '4px 8px', fontSize: '12px', cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.6 : 1 }}
+                  style={{ background: 'rgba(239,83,80,0.2)', color: '#ef5350', border: 'none', borderRadius: '999px', padding: '4px 8px', fontSize: '12px', cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.6 : 1 }}
                 >
                   {deleting ? '...' : 'Да'}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
                   disabled={deleting}
-                  style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(240,240,245,0.5)', border: 'none', borderRadius: '8px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}
+                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: '999px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}
                 >
                   Нет
                 </button>
@@ -278,7 +278,7 @@ function ReminderCard({
               <>
                 <button
                   onClick={() => onEdit(r)}
-                  style={{ padding: '5px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer', color: 'rgba(240,240,245,0.4)' }}
+                  style={{ padding: '5px', borderRadius: '999px', background: 'var(--bg-icon)', border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--text-secondary)' }}
                 >
                   <Pencil size={14} />
                 </button>
@@ -286,18 +286,18 @@ function ReminderCard({
                   onClick={() => onToggle(r)}
                   style={{
                     padding: '5px',
-                    borderRadius: '8px',
-                    background: 'rgba(255,255,255,0.05)',
-                    border: 'none',
+                    borderRadius: '999px',
+                    background: 'var(--bg-icon)',
+                    border: '1px solid var(--border)',
                     cursor: 'pointer',
-                    color: r.isActive ? '#f59e0b' : 'rgba(240,240,245,0.3)',
+                    color: r.isActive ? '#ffa726' : 'var(--text-tertiary)',
                   }}
                 >
                   {r.isActive ? <Bell size={14} /> : <BellOff size={14} />}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  style={{ padding: '5px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: 'none', cursor: 'pointer', color: '#ef4444' }}
+                  style={{ padding: '5px', borderRadius: '999px', background: 'rgba(239,83,80,0.1)', border: 'none', cursor: 'pointer', color: '#ef5350' }}
                 >
                   <Trash2 size={14} />
                 </button>
@@ -357,7 +357,7 @@ function ReminderFormModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(12px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
       onClick={onClose}
     >
       <motion.div
@@ -378,21 +378,19 @@ function ReminderFormModal({
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(8,8,8,0.98)',
-          border: '1px solid rgba(255,255,255,0.09)',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-panel)',
           overflow: 'hidden',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
         }}
       >
         <div
           onPointerDown={(e) => dragControls.start(e)}
           style={{ paddingTop: '10px', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
         >
-          <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'rgba(255,255,255,0.25)' }} />
+          <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'var(--border)' }} />
         </div>
-        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid var(--divider)' }}>
           <h3 style={{ fontWeight: 700, fontSize: '18px' }}>{title}</h3>
         </div>
         <div
@@ -438,12 +436,12 @@ function ReminderFormModal({
             style={{ width: '100%', padding: '14px', borderRadius: 'var(--radius-md)', marginBottom: error ? '12px' : '0', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}
           />
           {error && (
-            <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-md)', fontSize: '13px', color: '#f87171' }}>
+            <div style={{ marginTop: '12px', padding: '12px', background: 'var(--expense-bg)', border: '1px solid rgba(255,82,82,0.22)', borderRadius: 'var(--radius-md)', fontSize: '13px', color: 'var(--expense)' }}>
               {error}
             </div>
           )}
         </div>
-        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid var(--divider)' }}>
           <div style={{ display: 'flex', gap: '10px' }}>
             <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
             <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>Сохранить</Button>

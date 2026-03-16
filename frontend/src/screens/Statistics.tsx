@@ -146,12 +146,12 @@ export function Statistics() {
               style={{
                 flex: 1,
                 padding: '8px',
-                borderRadius: '10px',
+                borderRadius: '999px',
                 fontSize: '13px',
                 fontWeight: 600,
-                border: `1px solid ${period === p.value ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                background: period === p.value ? 'var(--accent-dim)' : 'rgba(255,255,255,0.04)',
-                color: period === p.value ? 'var(--accent-light)' : 'rgba(240,240,245,0.5)',
+                border: `1px solid ${period === p.value ? 'var(--border-accent)' : 'var(--border)'}`,
+                background: period === p.value ? 'var(--accent-dim)' : 'var(--bg-surface)',
+                color: period === p.value ? 'var(--accent)' : 'var(--text-secondary)',
                 cursor: 'pointer',
               }}
             >
@@ -173,9 +173,9 @@ export function Statistics() {
             style={{
               padding: '10px 20px',
               borderRadius: 'var(--radius-pill)',
-              background: 'var(--accent-dim)',
-              border: '1px solid rgba(34,197,94,0.28)',
-              color: 'var(--accent)',
+              background: '#ffffff',
+              border: 'none',
+              color: '#000000',
               fontSize: '14px',
               fontWeight: 600,
               cursor: 'pointer',
@@ -208,12 +208,12 @@ export function Statistics() {
                 style={{
                   flex: 1,
                   padding: '7px 4px',
-                  borderRadius: '10px',
+                  borderRadius: '999px',
                   fontSize: '12px',
                   fontWeight: 600,
-                  border: `1px solid ${chartTab === t.value ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                  background: chartTab === t.value ? 'var(--accent-dim)' : 'rgba(255,255,255,0.04)',
-                  color: chartTab === t.value ? 'var(--accent-light)' : 'rgba(240,240,245,0.5)',
+                  border: `1px solid ${chartTab === t.value ? 'var(--border-accent)' : 'var(--border)'}`,
+                  background: chartTab === t.value ? 'var(--accent-dim)' : 'var(--bg-surface)',
+                  color: chartTab === t.value ? 'var(--accent)' : 'var(--text-secondary)',
                   cursor: 'pointer',
                 }}
               >
@@ -230,29 +230,30 @@ export function Statistics() {
                     <BarChart data={monthly} barGap={4}>
                       <XAxis
                         dataKey="month"
-                        tick={{ fill: 'rgba(240,240,245,0.4)', fontSize: 11 }}
+                        tick={{ fill: 'rgba(255,255,255,0.28)', fontSize: 11 }}
                         axisLine={false}
                         tickLine={false}
                       />
                       <YAxis
-                        tick={{ fill: 'rgba(240,240,245,0.4)', fontSize: 10 }}
+                        tick={{ fill: 'rgba(255,255,255,0.28)', fontSize: 10 }}
                         axisLine={false}
                         tickLine={false}
                         tickFormatter={formatYAxis}
                         width={36}
                       />
                       <Tooltip
+                        cursor={false}
                         contentStyle={{
-                          background: 'rgba(8,8,8,0.98)',
-                          border: '1px solid rgba(255,255,255,0.09)',
-                          borderRadius: '12px',
-                          color: '#f0f0f5',
+                          background: 'rgba(255,255,255,0.07)',
+                          border: '1px solid rgba(255,255,255,0.20)',
+                          borderRadius: '999px',
+                          color: '#ffffff',
                         }}
                         wrapperStyle={{ background: 'transparent', border: 'none' }}
                         formatter={(value: number) => [fmt(value), '']}
                       />
-                      <Bar dataKey="income" fill="#22c55e" radius={[6, 6, 0, 0]} name="Доход" />
-                      <Bar dataKey="expense" fill="#ef4444" radius={[6, 6, 0, 0]} name="Расход" />
+                      <Bar dataKey="income" fill="var(--income)" radius={[6, 6, 0, 0]} name="Доход" />
+                      <Bar dataKey="expense" fill="#ef5350" radius={[6, 6, 0, 0]} name="Расход" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -281,11 +282,12 @@ export function Statistics() {
                         ))}
                       </Pie>
                       <Tooltip
+                        cursor={false}
                         contentStyle={{
-                          background: 'rgba(8,8,8,0.98)',
-                          border: '1px solid rgba(255,255,255,0.09)',
-                          borderRadius: '12px',
-                          color: '#f0f0f5',
+                          background: 'rgba(255,255,255,0.07)',
+                          border: '1px solid rgba(255,255,255,0.20)',
+                          borderRadius: '999px',
+                          color: '#ffffff',
                         }}
                         wrapperStyle={{ background: 'transparent', border: 'none' }}
                         formatter={(value: number) => [fmt(value), '']}

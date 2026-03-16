@@ -130,14 +130,14 @@ export function Transactions() {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-panel)',
             padding: '10px 14px',
             marginBottom: '12px',
           }}
         >
-          <Search size={16} color="rgba(240,240,245,0.3)" />
+          <Search size={16} color="var(--text-tertiary)" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -156,9 +156,9 @@ export function Transactions() {
                 borderRadius: 'var(--radius-panel)',
                 fontSize: '13px',
                 fontWeight: 600,
-                border: `1px solid ${filterType === f.value ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                background: filterType === f.value ? 'var(--accent-dim)' : 'rgba(255,255,255,0.04)',
-                color: filterType === f.value ? 'var(--accent)' : 'rgba(240,240,245,0.5)',
+                border: `1px solid ${filterType === f.value ? 'var(--border-accent)' : 'var(--border)'}`,
+                background: filterType === f.value ? 'var(--accent-dim)' : 'var(--bg-surface)',
+                color: filterType === f.value ? 'var(--accent)' : 'var(--text-secondary)',
                 cursor: 'pointer',
               }}
             >
@@ -233,7 +233,7 @@ export function Transactions() {
             Показано {transactions.length} из {total}
           </p>
           {loadMoreError && (
-            <p style={{ fontSize: '12px', color: '#ef4444' }}>{loadMoreError}</p>
+            <p style={{ fontSize: '12px', color: '#ef5350' }}>{loadMoreError}</p>
           )}
           <button
             onClick={loadMore}
@@ -241,7 +241,7 @@ export function Transactions() {
             style={{
               padding: '10px 28px',
               borderRadius: 'var(--radius-panel)',
-              border: '1px solid rgba(34,197,94,0.3)',
+              border: '1px solid rgba(255,255,255,0.3)',
               background: 'var(--accent-dim)',
               color: 'var(--accent-light)',
               fontSize: '14px',
@@ -361,14 +361,14 @@ function TransactionItem({
               <button
                 onClick={handleConfirmDelete}
                 disabled={deleting}
-                style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', borderRadius: '8px', padding: '4px 10px', fontSize: '12px', cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.6 : 1 }}
+                style={{ background: 'rgba(239,83,80,0.2)', color: '#ef5350', border: 'none', borderRadius: '999px', padding: '4px 10px', fontSize: '12px', cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.6 : 1 }}
               >
                 {deleting ? '...' : 'Да'}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
                 disabled={deleting}
-                style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(240,240,245,0.5)', border: 'none', borderRadius: '8px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}
+                style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: '999px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}
               >
                 Нет
               </button>
@@ -442,7 +442,7 @@ function TransactionFormModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
       onClick={onClose}
     >
       <motion.div
@@ -463,20 +463,19 @@ function TransactionFormModal({
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(8,8,8,0.98)',
-          border: '1px solid rgba(255,255,255,0.09)',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-panel)',
           overflow: 'hidden',
-          backdropFilter: 'blur(40px)',
         }}
       >
         <div
           onPointerDown={(e) => dragControls.start(e)}
           style={{ paddingTop: '10px', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
         >
-          <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'rgba(255,255,255,0.25)' }} />
+          <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'var(--border)' }} />
         </div>
-        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid var(--divider)' }}>
           <h3 style={{ fontWeight: 700, fontSize: '18px' }}>{title}</h3>
         </div>
         <div
@@ -500,10 +499,10 @@ function TransactionFormModal({
                 style={{
                   flex: 1,
                   padding: '10px',
-                  borderRadius: '12px',
-                  border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(255,255,255,0.08)'}`,
-                  background: type === t ? (t === 'income' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)') : 'rgba(255,255,255,0.04)',
-                  color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(240,240,245,0.5)',
+                  borderRadius: '999px',
+                  border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'var(--border)'}`,
+                  background: type === t ? (t === 'income' ? 'var(--income-bg)' : 'var(--expense-bg)') : 'var(--bg-surface)',
+                  color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'var(--text-secondary)',
                   fontWeight: 600, fontSize: '14px', cursor: 'pointer',
                 }}
               >
@@ -516,12 +515,12 @@ function TransactionFormModal({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="Сумма"
-            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px', fontSize: '18px', fontWeight: 700 }}
+            style={{ width: '100%', padding: '12px', borderRadius: '999px', marginBottom: '10px', fontSize: '18px', fontWeight: 700 }}
           />
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
+            style={{ width: '100%', padding: '12px', borderRadius: '999px', marginBottom: '10px' }}
           >
             <option value="">Без категории</option>
             {filtered.map((cat) => <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>)}
@@ -530,22 +529,22 @@ function TransactionFormModal({
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
+            style={{ width: '100%', padding: '12px', borderRadius: '999px', marginBottom: '10px' }}
           />
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Заметка (необязательно)"
-            style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: error ? '8px' : '0' }}
+            style={{ width: '100%', padding: '12px', borderRadius: '999px', marginBottom: error ? '8px' : '0' }}
           />
           {error && (
-            <div style={{ marginTop: '12px', padding: '10px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', fontSize: '13px', color: '#f87171' }}>
+            <div style={{ marginTop: '12px', padding: '10px 12px', background: 'var(--expense-bg)', border: '1px solid rgba(255,82,82,0.22)', borderRadius: '999px', fontSize: '13px', color: 'var(--expense)' }}>
               {error}
             </div>
           )}
         </div>
-        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid var(--divider)' }}>
           <div style={{ display: 'flex', gap: '10px' }}>
             <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
             <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>Сохранить</Button>

@@ -71,7 +71,7 @@ export function VoiceConfirmModal({
         exit={{ opacity: 0 }}
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+          background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
           zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box',
         }}
         onClick={onClose}
@@ -91,8 +91,13 @@ export function VoiceConfirmModal({
           onClick={(e) => e.stopPropagation()}
           style={{
             width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column',
-            background: 'rgba(8,8,8,0.98)', border: '1px solid rgba(255,255,255,0.09)',
-            borderRadius: 'var(--radius-panel)', backdropFilter: 'blur(40px)', overflow: 'hidden',
+            background: 'rgba(22, 22, 22, 0.85)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 'var(--radius-panel)',
+            overflow: 'hidden',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.50), 0 2px 0 rgba(255,255,255,0.04) inset',
           }}
         >
           {/* Header — drag handle */}
@@ -114,7 +119,7 @@ export function VoiceConfirmModal({
                 <X size={20} />
               </button>
             </div>
-            <p style={{ fontSize: '13px', fontStyle: 'italic', color: 'rgba(240,240,245,0.7)', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', padding: '8px 12px' }}>
+            <p style={{ fontSize: '13px', fontStyle: 'italic', color: 'rgba(240,240,245,0.7)', background: 'rgba(255,255,255,0.04)', borderRadius: '999px', padding: '8px 12px' }}>
               «{transcription}»
             </p>
           </div>
@@ -168,7 +173,7 @@ export function VoiceConfirmModal({
           {/* Footer */}
           <div style={{ padding: '12px 20px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
             {error && (
-              <div style={{ marginBottom: '10px', padding: '10px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '12px', fontSize: '13px', color: '#f87171' }}>
+              <div style={{ marginBottom: '10px', padding: '10px 12px', background: 'rgba(239,83,80,0.12)', border: '1px solid rgba(239,83,80,0.25)', borderRadius: '999px', fontSize: '13px', color: '#ef5350' }}>
                 {error}
               </div>
             )}
@@ -181,7 +186,13 @@ export function VoiceConfirmModal({
                 size="md"
                 onClick={handleConfirm}
                 loading={loading}
-                style={{ flex: 2 }}
+                style={{
+                  flex: 2,
+                  background: 'var(--income)',
+                  color: '#1a2e1b',
+                  border: 'none',
+                  boxShadow: '0 4px 20px rgba(102,187,106,0.35)',
+                }}
               >
                 <CheckCircle size={16} />
                 {entries.length > 1 ? `Сохранить все (${entries.length})` : 'Сохранить'}
@@ -215,20 +226,20 @@ function EntryViewCard({
 
   const matchedCat = categories.find((c) => c.name.toLowerCase() === entry.category?.toLowerCase());
 
-  const typeColor = isReminder ? '#f59e0b' : isIncome ? 'var(--income)' : 'var(--expense)';
+  const typeColor = isReminder ? '#ffa726' : isIncome ? 'var(--income)' : 'var(--expense)';
   const TypeIcon = isIncome ? TrendingUp : isReminder ? Bell : TrendingDown;
 
   return (
     <div
       style={{
         background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '16px', padding: '14px',
+        borderRadius: '999px', padding: '14px',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
           <div style={{
-            width: 36, height: 36, borderRadius: '10px', flexShrink: 0,
+            width: 36, height: 36, borderRadius: '999px', flexShrink: 0,
             background: `${typeColor}15`, display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <TypeIcon size={16} color={typeColor} />
@@ -239,7 +250,7 @@ function EntryViewCard({
                 {isIncome ? '+' : isReminder ? '' : '-'}{fmt(entry.amount)}
               </p>
             ) : (
-              <p style={{ fontSize: '13px', color: 'rgba(239,68,68,0.8)', fontWeight: 600 }}>Сумма не указана</p>
+              <p style={{ fontSize: '13px', color: 'rgba(239,83,80,0.8)', fontWeight: 600 }}>Сумма не указана</p>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', flexWrap: 'wrap' }}>
               {entry.category && (
@@ -258,14 +269,14 @@ function EntryViewCard({
         <div style={{ display: 'flex', gap: '4px', flexShrink: 0, marginLeft: '8px' }}>
           <button
             onClick={onEdit}
-            style={{ padding: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'rgba(240,240,245,0.5)' }}
+            style={{ padding: '6px', background: 'rgba(255,255,255,0.06)', border: 'none', borderRadius: '999px', cursor: 'pointer', color: 'rgba(240,240,245,0.5)' }}
           >
             <Pencil size={14} />
           </button>
           {showDelete && (
             <button
               onClick={onDelete}
-              style={{ padding: '6px', background: 'rgba(239,68,68,0.1)', border: 'none', borderRadius: '8px', cursor: 'pointer', color: '#ef4444' }}
+              style={{ padding: '6px', background: 'rgba(239,83,80,0.1)', border: 'none', borderRadius: '999px', cursor: 'pointer', color: '#ef5350' }}
             >
               <Trash2 size={14} />
             </button>
@@ -313,8 +324,8 @@ function EntryEditCard({
 
   return (
     <div style={{
-      background: 'var(--accent-dim)', border: '1px solid rgba(34,197,94,0.3)',
-      borderRadius: '16px', padding: '14px',
+      background: 'var(--accent-dim)', border: '1px solid rgba(255,255,255,0.3)',
+      borderRadius: '999px', padding: '14px',
     }}>
       <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
         {(['expense', 'income'] as const).map((t) => (
@@ -322,9 +333,9 @@ function EntryEditCard({
             key={t}
             onClick={() => { setType(t); setCategory(''); }}
             style={{
-              flex: 1, padding: '7px', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              flex: 1, padding: '7px', borderRadius: '999px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
               border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(255,255,255,0.08)'}`,
-              background: type === t ? (t === 'income' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)') : 'rgba(255,255,255,0.04)',
+              background: type === t ? (t === 'income' ? 'rgba(255,255,255,0.15)' : 'rgba(239,83,80,0.15)') : 'rgba(255,255,255,0.04)',
               color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(240,240,245,0.4)',
             }}
           >
@@ -337,12 +348,12 @@ function EntryEditCard({
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
         placeholder="Сумма"
-        style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', marginBottom: '8px', fontSize: '15px', fontWeight: 700 }}
+        style={{ width: '100%', padding: '9px 12px', borderRadius: '999px', marginBottom: '8px', fontSize: '15px', fontWeight: 700 }}
       />
       <select
         value={category}
         onChange={(e) => setCategory(e.target.value)}
-        style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', marginBottom: '8px' }}
+        style={{ width: '100%', padding: '9px 12px', borderRadius: '999px', marginBottom: '8px' }}
       >
         <option value="">Без категории</option>
         {filteredCats.map((c) => <option key={c.id} value={c.name}>{c.icon} {c.name}</option>)}
@@ -351,25 +362,25 @@ function EntryEditCard({
         type="date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
-        style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', marginBottom: '8px' }}
+        style={{ width: '100%', padding: '9px 12px', borderRadius: '999px', marginBottom: '8px' }}
       />
       <input
         type="text"
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="Заметка"
-        style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', marginBottom: '10px' }}
+        style={{ width: '100%', padding: '9px 12px', borderRadius: '999px', marginBottom: '10px' }}
       />
       <div style={{ display: 'flex', gap: '8px' }}>
         <button
           onClick={onCancel}
-          style={{ flex: 1, padding: '9px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', border: 'none', color: 'rgba(240,240,245,0.6)', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
+          style={{ flex: 1, padding: '9px', borderRadius: '999px', background: 'rgba(255,255,255,0.06)', border: 'none', color: 'rgba(240,240,245,0.6)', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
         >
           Отмена
         </button>
         <button
           onClick={handleSave}
-          style={{ flex: 2, padding: '9px', borderRadius: '10px', background: 'var(--accent-dim)', border: '1px solid rgba(34,197,94,0.4)', color: 'var(--accent-light)', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
+          style={{ flex: 2, padding: '9px', borderRadius: '999px', background: 'var(--accent-dim)', border: '1px solid rgba(255,255,255,0.4)', color: 'var(--accent-light)', fontSize: '13px', cursor: 'pointer', fontWeight: 600 }}
         >
           Готово
         </button>

@@ -4,11 +4,11 @@ import { motion } from 'framer-motion';
 import { LayoutDashboard, ArrowLeftRight, BarChart3, Bell, Settings } from 'lucide-react';
 
 const tabs = [
-  { path: '/', icon: LayoutDashboard, label: 'Главная' },
-  { path: '/transactions', icon: ArrowLeftRight, label: 'Операции' },
-  { path: '/stats', icon: BarChart3, label: 'Статистика' },
-  { path: '/reminders', icon: Bell, label: 'Платежи' },
-  { path: '/settings', icon: Settings, label: 'Настройки' },
+  { path: '/', icon: LayoutDashboard },
+  { path: '/transactions', icon: ArrowLeftRight },
+  { path: '/stats', icon: BarChart3 },
+  { path: '/reminders', icon: Bell },
+  { path: '/settings', icon: Settings },
 ];
 
 export function BottomNav() {
@@ -19,23 +19,22 @@ export function BottomNav() {
     <nav
       style={{
         position: 'fixed',
-        bottom: 'calc(12px + var(--safe-bottom))',
-        left: '14px',
-        right: '14px',
-        height: '64px',
-        background: 'rgba(8, 8, 8, 0.55)',
-        backdropFilter: 'blur(64px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(64px) saturate(180%)',
-        borderRadius: 'var(--radius-pill)',
-        border: '1px solid rgba(255,255,255,0.09)',
-        boxShadow: '0 -16px 48px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.09) inset',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 8px',
+        bottom: 'calc(8px + var(--safe-bottom))',
+        left: '12px',
+        right: '12px',
         zIndex: 100,
+        background: 'rgba(28, 28, 28, 0.65)',
+        backdropFilter: 'blur(16px) saturate(130%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(130%)',
+        borderRadius: '28px',
+        padding: '6px',
+        display: 'flex',
+        gap: '6px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.04)',
       }}
     >
-      {tabs.map(({ path, icon: Icon, label }) => {
+      {tabs.map(({ path, icon: Icon }) => {
         const active = location.pathname === path;
         return (
           <button
@@ -45,56 +44,37 @@ export function BottomNav() {
             onClick={() => navigate(path)}
             style={{
               flex: 1,
-              height: '48px',
+              height: '52px',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '3px',
-              background: 'none',
               border: 'none',
               cursor: 'pointer',
-              borderRadius: '24px',
+              borderRadius: '22px',
               position: 'relative',
+              background: 'transparent',
             }}
           >
             {active && (
               <motion.div
-                layoutId="nav-pill"
+                layoutId="nav-active"
                 style={{
                   position: 'absolute',
-                  inset: '2px 4px',
+                  inset: 0,
                   borderRadius: '22px',
-                  background: 'var(--accent-dim)',
-                  border: '1px solid rgba(34,197,94,0.28)',
-                  boxShadow: '0 0 16px var(--accent-glow), 0 1px 0 rgba(255,255,255,0.06) inset',
+                  background: 'rgba(255,255,255,0.12)',
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
                 }}
-                transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 34 }}
               />
             )}
-            <motion.div
-              animate={{ scale: active ? 1.08 : 1, y: active ? -1 : 0 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-              style={{ position: 'relative', zIndex: 1 }}
-            >
+            <div style={{ position: 'relative', zIndex: 1 }}>
               <Icon
-                size={20}
-                color={active ? 'var(--accent)' : 'rgba(255,255,255,0.28)'}
-                strokeWidth={active ? 2.2 : 1.8}
+                size={22}
+                color={active ? '#ffffff' : 'rgba(255,255,255,0.28)'}
+                strokeWidth={active ? 2.2 : 1.6}
               />
-            </motion.div>
-            <span
-              style={{
-                fontSize: '9px',
-                fontWeight: active ? 600 : 400,
-                color: active ? 'var(--accent)' : 'rgba(255,255,255,0.25)',
-                letterSpacing: '0.02em',
-                position: 'relative',
-                zIndex: 1,
-              }}
-            >
-              {label}
-            </span>
+            </div>
           </button>
         );
       })}

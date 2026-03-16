@@ -165,7 +165,7 @@ export function Dashboard() {
     <div className="page" style={{ paddingLeft: 16, paddingRight: 16 }}>
 
       {/* ── Header ── */}
-      <motion.div {...fadeUp} style={{ paddingTop: '24px', paddingBottom: '4px' }}>
+      <motion.div {...fadeUp} style={{ paddingTop: '24px', paddingBottom: '4px', textAlign: 'center' }}>
         <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', fontWeight: 500 }}>{greeting()}</p>
         <h1 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.02em', marginTop: '2px' }}>
           {user?.firstName || 'Привет!'}
@@ -183,13 +183,11 @@ export function Dashboard() {
             style={{
               marginTop: '12px',
               padding: '12px 16px',
-              background: 'rgba(255,69,58,0.10)',
-              border: '1px solid rgba(255,69,58,0.20)',
+              background: 'var(--expense-bg)',
+              border: '1px solid rgba(255,82,82,0.22)',
               borderRadius: 'var(--radius-md)',
               fontSize: '13px',
               color: 'var(--expense)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
             }}
           >
             {error}
@@ -204,14 +202,12 @@ export function Dashboard() {
           style={{
             marginTop: '12px',
             padding: '14px 16px',
-            background: 'var(--glass-bg)',
-            border: '1px solid var(--glass-border)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
             flexDirection: 'column',
             gap: '12px',
-            backdropFilter: 'blur(40px)',
-            WebkitBackdropFilter: 'blur(40px)',
           }}
         >
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Не удалось загрузить данные</span>
@@ -220,12 +216,12 @@ export function Dashboard() {
               onClick={() => loadData(true)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '5px',
-                background: 'var(--accent-dim)',
-                border: '1px solid rgba(34,197,94,0.28)',
+                background: '#ffffff',
+                border: 'none',
                 borderRadius: 'var(--radius-pill)',
-                padding: '6px 12px',
-                color: 'var(--accent)',
-                fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                padding: '6px 14px',
+                color: '#000000',
+                fontSize: '13px', fontWeight: 700, cursor: 'pointer',
               }}
             >
               <RefreshCw size={12} />
@@ -234,9 +230,9 @@ export function Dashboard() {
             <button
               onClick={handleLogout}
               style={{
-                padding: '6px 12px',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
+                padding: '6px 14px',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-pill)',
                 color: 'var(--text-secondary)',
                 fontSize: '13px', fontWeight: 600, cursor: 'pointer',
@@ -256,15 +252,13 @@ export function Dashboard() {
       >
         <div
           style={{
-            background: 'rgba(18,18,18,0.95)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 'var(--radius-xl)',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-accent)',
+            borderRadius: 'var(--radius-panel)',
             padding: '24px',
             position: 'relative',
             overflow: 'hidden',
-            backdropFilter: 'blur(40px)',
-            WebkitBackdropFilter: 'blur(40px)',
-            boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.30)',
           }}
         >
           {refreshing && (
@@ -278,7 +272,7 @@ export function Dashboard() {
           )}
 
           <div style={{ textAlign: 'center', marginBottom: '4px' }}>
-            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', fontWeight: 500, marginBottom: '6px' }}>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               Баланс
             </p>
             <button
@@ -291,7 +285,7 @@ export function Dashboard() {
                 fontSize: '52px',
                 fontWeight: 800,
                 letterSpacing: '-0.03em',
-                color: '#fff',
+                color: 'var(--income)',
                 lineHeight: 1.1,
               }}
               title={user?.currentBudgetId ? 'Нажмите чтобы изменить начальный баланс' : undefined}
@@ -300,34 +294,34 @@ export function Dashboard() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '20px', marginTop: '18px' }}>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
             <div style={{
               flex: 1,
-              background: 'rgba(34,197,94,0.10)',
-              border: '1px solid rgba(34,197,94,0.18)',
-              borderRadius: 'var(--radius-md)',
-              padding: '10px 12px',
+              background: 'var(--income-bg)',
+              border: '1px solid rgba(255,255,255,0.20)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '12px 14px',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px' }}>
                 <TrendingUp size={13} color="var(--income)" />
-                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Доходы</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Доходы</span>
               </div>
-              <p style={{ fontWeight: 700, color: 'var(--income)', fontSize: '16px', letterSpacing: '-0.01em' }}>
+              <p style={{ fontWeight: 700, color: 'var(--income)', fontSize: '17px', letterSpacing: '-0.02em' }}>
                 {summary ? fmt(summary.income) : '—'}
               </p>
             </div>
             <div style={{
               flex: 1,
-              background: 'rgba(255,69,58,0.08)',
-              border: '1px solid rgba(255,69,58,0.16)',
-              borderRadius: 'var(--radius-md)',
-              padding: '10px 12px',
+              background: 'var(--expense-bg)',
+              border: '1px solid rgba(255,82,82,0.20)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '12px 14px',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '5px' }}>
                 <TrendingDown size={13} color="var(--expense)" />
-                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>Расходы</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Расходы</span>
               </div>
-              <p style={{ fontWeight: 700, color: 'var(--expense)', fontSize: '16px', letterSpacing: '-0.01em' }}>
+              <p style={{ fontWeight: 700, color: 'var(--expense)', fontSize: '17px', letterSpacing: '-0.02em' }}>
                 {summary ? fmt(summary.expense) : '—'}
               </p>
             </div>
@@ -339,24 +333,20 @@ export function Dashboard() {
       <motion.div
         {...fadeUp}
         transition={{ delay: 0.09, ...fadeUp.transition }}
-        style={{ marginBottom: '14px' }}
+        style={{
+          marginBottom: '14px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '4px',
+          paddingTop: '10px',
+          paddingBottom: '10px',
+        }}
       >
-        <Card
-          padding="lg"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '4px',
-            paddingTop: '22px',
-            paddingBottom: '22px',
-          }}
-        >
-          <VoiceButton
-            onResult={(t, p) => { setError(null); setVoiceResult({ transcription: t, parsed: p }); }}
-            onError={(msg) => showError(msg)}
-          />
-        </Card>
+        <VoiceButton
+          onResult={(t, p) => { setError(null); setVoiceResult({ transcription: t, parsed: p }); }}
+          onError={(msg) => showError(msg)}
+        />
       </motion.div>
 
       {/* ── Upcoming reminders ── */}
@@ -377,9 +367,9 @@ export function Dashboard() {
                         style={{
                           width: 38,
                           height: 38,
-                          borderRadius: 'var(--radius-md)',
-                          background: 'rgba(245,158,11,0.14)',
-                          border: '1px solid rgba(245,158,11,0.20)',
+                          borderRadius: '999px',
+                          background: 'var(--bg-icon)',
+                          border: '1px solid var(--border)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -425,15 +415,17 @@ export function Dashboard() {
           <p className="section-title" style={{ padding: 0, margin: 0 }}>Последние операции</p>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
+              className="add-btn"
               onClick={() => navigate('/transactions', { state: { openAdd: true } })}
               style={{
                 display: 'flex', alignItems: 'center', gap: '4px',
-                background: 'var(--accent-dim)',
-                border: '1px solid rgba(34,197,94,0.28)',
+                background: 'var(--income)',
+                border: 'none',
                 borderRadius: 'var(--radius-pill)',
-                padding: '5px 12px',
-                color: 'var(--accent)',
-                fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                padding: '6px 14px',
+                color: '#1a2e1b',
+                fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                boxShadow: '0 2px 16px rgba(102,187,106,0.35)',
               }}
             >
               <Plus size={12} /> Добавить
@@ -560,8 +552,9 @@ function BalanceEditModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(0,0,0,0.7)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(0,0,0,0.35)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         zIndex: 200,
         display: 'flex',
         alignItems: 'flex-end',
@@ -583,8 +576,8 @@ function BalanceEditModal({
         style={{
           width: '100%',
           padding: '20px',
-          background: 'rgba(12,12,12,0.98)',
-          border: '1px solid rgba(255,255,255,0.09)',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-panel)',
         }}
       >
@@ -607,12 +600,9 @@ function BalanceEditModal({
           style={{
             width: '100%',
             padding: '14px',
-            borderRadius: '12px',
+            borderRadius: '999px',
             marginBottom: '16px',
             fontSize: '18px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: '#fff',
           }}
         />
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -622,8 +612,8 @@ function BalanceEditModal({
               flex: 1,
               padding: '14px',
               borderRadius: 'var(--radius-panel)',
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
               color: 'var(--text-primary)',
               fontSize: '15px',
               fontWeight: 600,
@@ -639,12 +629,13 @@ function BalanceEditModal({
               flex: 1,
               padding: '14px',
               borderRadius: 'var(--radius-panel)',
-              background: 'var(--accent-dim)',
-              border: '1px solid rgba(34,197,94,0.3)',
-              color: 'var(--accent)',
+              background: '#ffffff',
+              border: 'none',
+              color: '#000000',
               fontSize: '15px',
-              fontWeight: 600,
+              fontWeight: 700,
               cursor: saving ? 'wait' : 'pointer',
+              boxShadow: '0 4px 14px rgba(255,255,255,0.35)',
             }}
           >
             {saving ? 'Сохранение...' : 'Сохранить'}
@@ -681,16 +672,18 @@ function TransactionDetailModal({
         initial={{ opacity: 1 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 1 }}
+        onClick={onClose}
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'transparent',
+          background: 'rgba(0,0,0,0.40)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
           zIndex: 200,
           display: 'flex',
           alignItems: 'flex-end',
           justifyContent: 'center',
           padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))',
-          pointerEvents: 'none',
         }}
       >
         <motion.div
@@ -703,30 +696,26 @@ function TransactionDetailModal({
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => dragControls.start(e)}
           style={{
             width: '100%',
             maxHeight: '60vh',
-            pointerEvents: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            background: 'rgba(12,12,12,0.98)',
-            border: '1px solid rgba(255,255,255,0.09)',
+            background: 'rgba(22, 22, 22, 0.85)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255,255,255,0.10)',
             borderRadius: 'var(--radius-panel)',
             overflow: 'hidden',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.50), 0 2px 0 rgba(255,255,255,0.04) inset',
+            cursor: 'grab',
+            touchAction: 'none',
           }}
         >
-          <div
-            onPointerDown={(e) => dragControls.start(e)}
-            style={{ paddingTop: '10px', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
-          >
-            <div style={{ width: 36, height: 4, margin: '0 auto 8px', borderRadius: 2, background: 'rgba(255,255,255,0.25)' }} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <h3 style={{ fontWeight: 700, fontSize: '18px' }}>Операция</h3>
-            <button onClick={onClose} style={{ background: 'none', padding: '6px', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
-              <X size={22} />
-            </button>
+          <div style={{ paddingTop: '16px', flexShrink: 0, borderBottom: '1px solid var(--divider)' }}>
+            <h3 style={{ fontWeight: 700, fontSize: '18px', padding: '12px 20px' }}>Операция</h3>
           </div>
 
           <div
@@ -748,7 +737,7 @@ function TransactionDetailModal({
                   style={{
                     width: 52,
                     height: 52,
-                    borderRadius: 'var(--radius-md)',
+                    borderRadius: '999px',
                     background: `${color}22`,
                     border: `1px solid ${color}44`,
                     display: 'flex',
@@ -778,15 +767,15 @@ function TransactionDetailModal({
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', gap: '10px', padding: '16px 20px 20px', flexShrink: 0, borderTop: '1px solid var(--divider)' }}>
             <button
               onClick={onClose}
               style={{
                 flex: 1,
                 padding: '14px',
                 borderRadius: 'var(--radius-panel)',
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
                 color: 'var(--text-primary)',
                 fontSize: '15px',
                 fontWeight: 600,
@@ -801,16 +790,17 @@ function TransactionDetailModal({
                 flex: 1,
                 padding: '14px',
                 borderRadius: 'var(--radius-panel)',
-                background: 'var(--accent-dim)',
-                border: '1px solid rgba(34,197,94,0.3)',
-                color: 'var(--accent)',
+                background: '#ffffff',
+                border: 'none',
+                color: '#000000',
                 fontSize: '15px',
-                fontWeight: 600,
+                fontWeight: 700,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
+                boxShadow: '0 4px 14px rgba(255,255,255,0.35)',
               }}
             >
               <Pencil size={16} />
@@ -852,9 +842,9 @@ function TransactionRow({
             style={{
               width: 40,
               height: 40,
-              borderRadius: 'var(--radius-md)',
-              background: `${color}1a`,
-              border: `1px solid ${color}28`,
+              borderRadius: '999px',
+              background: 'var(--bg-icon)',
+              border: '1px solid var(--border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

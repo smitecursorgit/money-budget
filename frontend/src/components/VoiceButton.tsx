@@ -103,84 +103,119 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
   const isRecording = state === 'recording';
   const isProcessing = state === 'processing';
 
-  const buttonBg = isRecording ? '#e63930' : '#22c55e';
-
-  const buttonShadow = isRecording
-    ? '0 0 0 0px rgba(255,69,58,0.4), 0 8px 32px rgba(255,69,58,0.30), 0 1px 0 rgba(255,255,255,0.22) inset'
-    : '0 8px 32px rgba(34,197,94,0.28), 0 1px 0 rgba(255,255,255,0.22) inset';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-      <motion.button
-        onClick={handleClick}
-        disabled={isProcessing}
-        animate={{
-          scale: isRecording ? 1.04 : 1,
-          boxShadow: buttonShadow,
-          opacity: isProcessing ? 0.92 : 1,
-        }}
-        whileTap={{ scale: 0.94 }}
-        transition={{
-          type: 'spring',
-          stiffness: 260,
-          damping: 24,
-          mass: 0.8,
-        }}
-        style={{
-          width: 76,
-          height: 76,
-          borderRadius: '50%',
-          background: buttonBg,
-          border: 'none',
-          cursor: isProcessing ? 'default' : 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          position: 'relative',
-          overflow: 'visible',
-        }}
-      >
-        {isRecording && <RecordingRipple />}
-        <AnimatePresence mode="wait">
-          {isProcessing ? (
-            <motion.div
-              key="loader"
-              initial={{ opacity: 0, scale: 0.85 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-              style={{ display: 'flex' }}
-            >
+      <div style={{ position: 'relative', width: 100, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {/* Persistent glow rings behind the button */}
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={`ring-${i}`}
+            style={{
+              position: 'absolute',
+              width: 76,
+              height: 76,
+              borderRadius: '50%',
+              border: isRecording
+                ? '1.5px solid rgba(239,83,80,0.35)'
+                : '1px solid rgba(255,255,255,0.08)',
+              pointerEvents: 'none',
+            }}
+            animate={{
+              scale: [1, 1.6 + i * 0.25],
+              opacity: [isRecording ? 0.5 : 0.25, 0],
+            }}
+            transition={{
+              duration: isRecording ? 1.8 : 3,
+              repeat: Infinity,
+              delay: i * (isRecording ? 0.5 : 0.9),
+              ease: [0.22, 0.61, 0.36, 1],
+            }}
+          />
+        ))}
+
+        {/* Soft radial glow behind button */}
+        <div
+          style={{
+            position: 'absolute',
+            width: 76,
+            height: 76,
+            borderRadius: '50%',
+            background: isRecording
+              ? 'radial-gradient(circle, rgba(239,83,80,0.15) 0%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(102,187,106,0.12) 0%, transparent 70%)',
+            transform: 'scale(1.8)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <motion.button
+          className="voice-btn"
+          onClick={handleClick}
+          disabled={isProcessing}
+          animate={{
+            scale: isRecording ? 1.04 : 1,
+            opacity: isProcessing ? 0.85 : 1,
+          }}
+          whileHover={!isProcessing ? { scale: 1.05, boxShadow: '0 8px 32px rgba(102,187,106,0.45)' } : undefined}
+          whileTap={!isProcessing ? { scale: 0.92 } : undefined}
+          transition={{ type: 'spring', stiffness: 260, damping: 24, mass: 0.8 }}
+          style={{
+            position: 'relative',
+            width: 76,
+            height: 76,
+            borderRadius: '50%',
+            background: isRecording ? '#ef5350' : 'var(--income)',
+            border: 'none',
+            cursor: isProcessing ? 'default' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'visible',
+            boxShadow: isRecording
+              ? '0 6px 28px rgba(239,83,80,0.40)'
+              : '0 6px 28px rgba(102,187,106,0.35)',
+            zIndex: 1,
+          }}
+        >
+          <AnimatePresence mode="wait">
+            {isProcessing ? (
               <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+                key="loader"
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+                style={{ display: 'flex' }}
               >
-                <Loader2 size={30} color="#fff" />
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+                >
+                  <Loader2 size={30} color={isRecording ? '#fff' : '#1a2e1b'} />
+                </motion.div>
               </motion.div>
-            </motion.div>
-          ) : isRecording ? (
-            <motion.div
-              key="stop"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              <MicOff size={30} color="#fff" />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="mic"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-            >
-              <Mic size={30} color="#fff" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.button>
+            ) : isRecording ? (
+              <motion.div
+                key="stop"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+              >
+                <MicOff size={30} color="#fff" />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="mic"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+              >
+                <Mic size={30} color="#1a2e1b" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.button>
+      </div>
 
       <AnimatePresence mode="wait">
         <motion.p
@@ -215,7 +250,7 @@ function RecordingRipple() {
             position: 'absolute',
             inset: 0,
             borderRadius: '50%',
-            border: '1.5px solid rgba(255,100,80,0.45)',
+            border: '1.5px solid rgba(239,83,80,0.40)',
             pointerEvents: 'none',
           }}
           animate={{ scale: [1, 1.9 + i * 0.2], opacity: [0.45, 0] }}

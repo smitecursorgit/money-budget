@@ -16,35 +16,35 @@ interface ButtonProps {
 
 const variants = {
   primary: {
-    background: '#22c55e',
-    color: '#fff',
+    background: '#ffffff',
+    color: '#000000',
     border: 'none',
-    boxShadow: '0 1px 0 rgba(255,255,255,0.12) inset',
+    boxShadow: '0 4px 20px rgba(255,255,255,0.12)',
   },
   secondary: {
     background: 'rgba(255,255,255,0.07)',
-    color: 'rgba(255,255,255,0.90)',
+    color: 'rgba(255,255,255,0.85)',
     border: '1px solid rgba(255,255,255,0.10)',
-    boxShadow: '0 1px 0 rgba(255,255,255,0.10) inset',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.20)',
   },
   ghost: {
     background: 'transparent',
-    color: 'var(--accent)',
+    color: 'rgba(255,255,255,0.70)',
     border: 'none',
     boxShadow: 'none',
   },
   danger: {
-    background: 'rgba(255,69,58,0.12)',
-    color: '#ff453a',
-    border: '1px solid rgba(255,69,58,0.22)',
-    boxShadow: '0 1px 0 rgba(255,255,255,0.06) inset',
+    background: 'rgba(239,83,80,0.12)',
+    color: '#ef5350',
+    border: '1px solid rgba(239,83,80,0.20)',
+    boxShadow: 'none',
   },
 };
 
 const sizes = {
-  sm: { padding: '7px 14px', fontSize: '13px', borderRadius: 'var(--radius-pill)', height: '34px' },
-  md: { padding: '11px 20px', fontSize: '15px', borderRadius: 'var(--radius-pill)', height: '46px' },
-  lg: { padding: '15px 28px', fontSize: '16px', borderRadius: 'var(--radius-pill)', height: '54px' },
+  sm: { padding: '8px 16px', fontSize: '13px', borderRadius: '999px', height: '36px' },
+  md: { padding: '13px 24px', fontSize: '15px', borderRadius: '999px', height: '50px' },
+  lg: { padding: '16px 30px', fontSize: '16px', borderRadius: '999px', height: '56px' },
 };
 
 export function Button({
@@ -77,13 +77,11 @@ export function Button({
         alignItems: 'center',
         justifyContent: 'center',
         gap: '7px',
-        fontWeight: 600,
+        fontWeight: 700,
         cursor: disabled || loading ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.45 : 1,
-        transition: 'opacity 0.2s',
+        letterSpacing: '-0.01em',
         userSelect: 'none',
-        backdropFilter: variant !== 'primary' ? 'blur(20px)' : undefined,
-        WebkitBackdropFilter: variant !== 'primary' ? 'blur(20px)' : undefined,
       }}
     >
       {loading ? (

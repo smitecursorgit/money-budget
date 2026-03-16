@@ -25,8 +25,8 @@ export function AuthScreen() {
         try {
           WebApp.ready();
           WebApp.expand();
-          WebApp.setHeaderColor('#000000');
-          WebApp.setBackgroundColor('#000000');
+        WebApp.setHeaderColor('#0a0a0a');
+        WebApp.setBackgroundColor('#0a0a0a');
         } catch {
           // Running in a regular browser — ignore Telegram SDK errors
         }
@@ -76,7 +76,7 @@ export function AuthScreen() {
         justifyContent: 'center',
         gap: '20px',
         padding: '32px',
-        background: 'var(--bg-primary)',
+        background: 'radial-gradient(ellipse 90% 55% at 50% 0%, #1a1a1a 0%, #111111 40%, #0a0a0a 100%)',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -96,20 +96,19 @@ export function AuthScreen() {
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  borderRadius: '50%',
-                  border: '2.5px solid rgba(34,197,94,0.2)',
-                  borderTopColor: '#22c55e',
-                }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                borderRadius: '50%',
+                border: '2.5px solid rgba(255,255,255,0.2)',
+                borderTopColor: '#ffffff',
+              }}
               />
-              <div style={{
+              <div               style={{
                 position: 'absolute',
                 inset: '10px',
                 borderRadius: '50%',
-                background: 'rgba(34,197,94,0.08)',
-                backdropFilter: 'blur(10px)',
+                background: 'rgba(255,255,255,0.08)',
               }} />
             </div>
             <p style={{ color: 'var(--text-tertiary)', fontSize: '14px', fontWeight: 500 }}>
@@ -142,8 +141,8 @@ export function AuthScreen() {
               width: 60,
               height: 60,
               borderRadius: '50%',
-              background: 'rgba(255,69,58,0.12)',
-              border: '1px solid rgba(255,69,58,0.22)',
+              background: 'var(--expense-bg)',
+              border: '1px solid rgba(255,82,82,0.22)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -165,8 +164,8 @@ export function AuthScreen() {
               style={{
                 padding: '12px 28px',
                 borderRadius: 'var(--radius-pill)',
-              background: '#22c55e',
-              color: '#fff',
+              background: '#ffffff',
+              color: '#000000',
               border: 'none',
               fontSize: '15px',
               fontWeight: 600,
