@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, TrendingDown, ChevronRight, RefreshCw, Plus, X, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -433,17 +434,19 @@ export function Dashboard() {
         />
       )}
 
-      {detailTransaction && (
-        <TransactionDetailModal
-          transaction={detailTransaction}
-          fmt={fmt}
-          onClose={() => setDetailTransaction(null)}
-          onEdit={() => {
-            setDetailTransaction(null);
-            navigate('/transactions', { state: { editId: detailTransaction.id } });
-          }}
-        />
-      )}
+      {detailTransaction &&
+        createPortal(
+          <TransactionDetailModal
+            transaction={detailTransaction}
+            fmt={fmt}
+            onClose={() => setDetailTransaction(null)}
+            onEdit={() => {
+              setDetailTransaction(null);
+              navigate('/transactions', { state: { editId: detailTransaction.id } });
+            }}
+          />,
+          document.body,
+        )}
     </div>
   );
 }
@@ -466,42 +469,37 @@ function TransactionDetailModal({
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0 }}
+        initial={{ opacity: 1 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        exit={{ opacity: 1 }}
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
+          background: 'transparent',
           zIndex: 200,
           display: 'flex',
           alignItems: 'flex-end',
           justifyContent: 'center',
-          padding: '0 14px calc(16px + var(--nav-height) + var(--safe-bottom))',
+          padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))',
+          pointerEvents: 'none',
         }}
-        onClick={onClose}
       >
         <motion.div
-          initial={{ y: 60, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 60, opacity: 0 }}
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          onClick={(e) => e.stopPropagation()}
           style={{
             width: '100%',
-            maxWidth: 420,
-            maxHeight: '85vh',
+            maxHeight: '60vh',
+            pointerEvents: 'auto',
             display: 'flex',
             flexDirection: 'column',
-            background: 'var(--glass-bg)',
-            border: '1px solid var(--glass-border)',
+            background: 'rgba(12,12,12,0.98)',
+            border: '1px solid rgba(255,255,255,0.09)',
             borderRadius: 'var(--radius-panel)',
             overflow: 'hidden',
-            backdropFilter: 'blur(40px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-            boxShadow: '0 1px 0 var(--glass-shine) inset, 0 24px 48px rgba(0,0,0,0.4)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
