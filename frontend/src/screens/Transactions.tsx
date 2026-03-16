@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Plus, Trash2, Search, Mic, Pencil } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
@@ -415,6 +415,7 @@ function TransactionFormModal({
   const [note, setNote] = useState(initial.note);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dragControls = useDragControls();
 
   const filtered = categories.filter((c) => c.type === type);
 
@@ -445,6 +446,13 @@ function TransactionFormModal({
       onClick={onClose}
     >
       <motion.div
+        drag="y"
+        dragControls={dragControls}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.5 }}
+        onDragEnd={(_: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
+          if (info.offset.y > 80 || info.velocity.y > 300) onClose();
+        }}
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         exit={{ y: 100 }}
@@ -462,6 +470,12 @@ function TransactionFormModal({
           backdropFilter: 'blur(40px)',
         }}
       >
+        <div
+          onPointerDown={(e) => dragControls.start(e)}
+          style={{ paddingTop: '10px', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
+        >
+          <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'rgba(255,255,255,0.25)' }} />
+        </div>
         <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <h3 style={{ fontWeight: 700, fontSize: '18px' }}>{title}</h3>
         </div>

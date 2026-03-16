@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { TrendingUp, TrendingDown, ChevronRight, RefreshCw, Plus, X, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
@@ -497,6 +497,7 @@ function BalanceEditModal({
 }) {
   const [val, setVal] = useState(String(Number(budget.initialBalance)));
   const [saving, setSaving] = useState(false);
+  const dragControls = useDragControls();
 
   const handleSave = async () => {
     const n = parseFloat(val.replace(/\s/g, '')) || 0;
@@ -506,6 +507,10 @@ function BalanceEditModal({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDragEnd = (_: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
+    if (info.offset.y > 80 || info.velocity.y > 300) onClose();
   };
 
   return (
@@ -526,6 +531,11 @@ function BalanceEditModal({
       onClick={onClose}
     >
       <motion.div
+        drag="y"
+        dragControls={dragControls}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.5 }}
+        onDragEnd={handleDragEnd}
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
@@ -539,6 +549,12 @@ function BalanceEditModal({
           borderRadius: 'var(--radius-panel)',
         }}
       >
+        <div
+          onPointerDown={(e) => dragControls.start(e)}
+          style={{ display: 'flex', justifyContent: 'center', paddingBottom: '12px', cursor: 'grab', touchAction: 'none' }}
+        >
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
+        </div>
         <h3 style={{ fontWeight: 700, fontSize: '18px', marginBottom: '12px' }}>Начальный баланс</h3>
         <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '12px' }}>
           Профиль «{budget.name}»
@@ -614,6 +630,11 @@ function TransactionDetailModal({
   const icon = t.category?.icon || '📦';
   const color = t.category?.color || '#71717a';
   const isIncome = t.type === 'income';
+  const dragControls = useDragControls();
+
+  const handleDragEnd = (_: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
+    if (info.offset.y > 80 || info.velocity.y > 300) onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -634,6 +655,11 @@ function TransactionDetailModal({
         }}
       >
         <motion.div
+          drag="y"
+          dragControls={dragControls}
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={{ top: 0, bottom: 0.5 }}
+          onDragEnd={handleDragEnd}
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
@@ -651,7 +677,13 @@ function TransactionDetailModal({
             boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div
+            onPointerDown={(e) => dragControls.start(e)}
+            style={{ paddingTop: '10px', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
+          >
+            <div style={{ width: 36, height: 4, margin: '0 auto 8px', borderRadius: 2, background: 'rgba(255,255,255,0.25)' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px 12px', flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
             <h3 style={{ fontWeight: 700, fontSize: '18px' }}>Операция</h3>
             <button onClick={onClose} style={{ background: 'none', padding: '6px', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer' }}>
               <X size={22} />
