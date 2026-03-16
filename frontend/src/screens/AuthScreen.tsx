@@ -31,7 +31,11 @@ export function AuthScreen() {
           // Running in a regular browser — ignore Telegram SDK errors
         }
 
-        const initData = WebApp.initData || 'dev';
+        const initData = WebApp.initData || (import.meta.env.DEV ? 'dev' : '');
+        if (!initData) {
+          setError('Откройте приложение через Telegram для входа.');
+          return;
+        }
         const { data } = await authApi.login(initData);
         setToken(data.token);
         setUser(data.user);

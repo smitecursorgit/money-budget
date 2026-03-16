@@ -6,14 +6,10 @@ declare global {
   }
 }
 
-const PRODUCTION_BACKEND = 'https://money-budget-q2lk.onrender.com';
-
 function getBaseUrl(): string {
   if (typeof window === 'undefined') return import.meta.env.VITE_API_URL || '/api';
-  // 1) config.js (runtime override) 2) env 3) production fallback 4) /api (proxy)
   if (window.__API_BASE_URL__) return window.__API_BASE_URL__;
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-  if (import.meta.env.PROD) return PRODUCTION_BACKEND; // если config.js не загрузился
   return '/api';
 }
 

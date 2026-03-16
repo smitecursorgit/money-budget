@@ -217,6 +217,7 @@ function ReminderCard({
       await onDelete(r.id);
     } finally {
       setDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -245,7 +246,7 @@ function ReminderCard({
               <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
                 {new Date(r.nextDate).toLocaleDateString('ru', { day: 'numeric', month: 'short' })}
               </span>
-              <Badge>{RECURRENCE_LABELS[r.recurrence]}</Badge>
+              <Badge>{RECURRENCE_LABELS[r.recurrence] || r.recurrence}</Badge>
             </div>
           </div>
         </div>

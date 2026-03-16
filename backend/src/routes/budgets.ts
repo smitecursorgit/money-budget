@@ -33,9 +33,23 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
+    console.log('[POST /budgets] userId:', userId, 'body:', JSON.stringify(req.body));
+
+    if (!req.body || typeof req.body !== 'object') {
+      res.status(400).json({ error: 'Пустое тело запроса. Отправьте JSON с полем name.' });
+      return;
+    }
+
     const parse = CreateBudgetSchema.safeParse(req.body);
     if (!parse.success) {
+      console.log('[POST /budgets] validation failed:', JSON.stringify(parse.error.flatten()));
       res.status(400).json({ error: parse.error.flatten() });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ error: 'Пользователь не найден. Перезайдите в приложение.' });
       return;
     }
 
@@ -54,18 +68,19 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
     res.status(201).json(budget);
   } catch (err: unknown) {
-    const prismaErr = err as { code?: string; meta?: { target?: string[] }; message?: string };
-    console.error('Budget create error:', {
-      code: prismaErr.code,
-      message: prismaErr.message,
-      meta: prismaErr.meta,
+    const e = err as { code?: string; meta?: Record<string, unknown>; message?: string };
+    console.error('Budget create error:', JSON.stringify({
+      code: e.code, message: e.message, meta: e.meta,
       stack: err instanceof Error ? err.stack : undefined,
-    });
-    let msg = 'Не удалось создать профиль.';
-    if (prismaErr.code === 'P2002') msg = 'Профиль с таким именем уже существует.';
-    else if (prismaErr.code === 'P2003') msg = 'Ошибка базы данных. Проверьте подключение.';
-    else if (prismaErr.message?.includes('connection') || prismaErr.message?.includes('timeout')) {
-      msg = 'Сервер базы данных не отвечает. Попробуйте через минуту.';
+    }));
+    let msg = `Ошибка создания профиля: ${e.code || 'unknown'}`;
+    if (e.code === 'P2002') msg = 'Профиль с таким именем уже существует.';
+    else if (e.code === 'P2003') msg = 'Связанная запись не найдена (FK). Перезайдите в приложение.';
+    else if (e.code === 'P2010' || e.code === 'P2024') msg = 'Ошибка подключения к базе данных.';
+    else if (e.message?.includes('connect') || e.message?.includes('timeout') || e.message?.includes('ECONNREFUSED')) {
+      msg = 'Сервер БД не отвечает. Попробуйте через минуту.';
+    } else if (e.message) {
+      msg = `Ошибка: ${e.message.slice(0, 120)}`;
     }
     res.status(500).json({ error: msg });
   }
