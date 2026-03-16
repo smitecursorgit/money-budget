@@ -318,8 +318,9 @@ function BudgetModal({ budget, onClose, onSaved }: { budget: Budget | null; onCl
         if (created && bal !== 0) await budgetsApi.update(created.id, { initialBalance: bal });
       }
       onSaved();
-    } catch {
-      setError('Не удалось сохранить. Попробуйте ещё раз.');
+    } catch (e) {
+      const err = e as { response?: { data?: { error?: string } }; message?: string };
+      setError(err.response?.data?.error || err.message || 'Не удалось сохранить. Попробуйте ещё раз.');
     } finally {
       setLoading(false);
     }

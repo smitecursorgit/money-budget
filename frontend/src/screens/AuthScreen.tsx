@@ -1,20 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WebApp from '@twa-dev/sdk';
-import { authApi, categoriesApi } from '../api/client.ts';
+import { authApi, categoriesApi, healthApi } from '../api/client.ts';
 import { useAppStore } from '../store/index.ts';
 
 export function AuthScreen() {
   const { setToken, setUser, setCategories, setBudgets } = useAppStore();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [slowHint, setSlowHint] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
+    let slowTimer: ReturnType<typeof setTimeout> | undefined;
     const authenticate = async () => {
       setError(null);
       setLoading(true);
+      setSlowHint(false);
+      slowTimer = setTimeout(() => setSlowHint(true), 8000);
       try {
+        // Pre-warm backend (Render cold start) before auth
+        healthApi.ping().catch(() => {});
+
         try {
           WebApp.ready();
           WebApp.expand();
@@ -37,17 +44,22 @@ export function AuthScreen() {
         const serverMsg = axiosErr?.response?.data?.error;
         const serverDetail = axiosErr?.response?.data?.detail;
         const status = axiosErr?.response?.status;
-        const msg = serverMsg
+        let msg = serverMsg
           ? `${serverMsg}${serverDetail ? ': ' + serverDetail : ''}`
           : 'Ошибка авторизации. Попробуйте снова.';
+        if (serverMsg?.includes('Invalid initData') || serverMsg?.includes('initData')) {
+          msg = 'Откройте приложение через Telegram для входа.';
+        }
         console.error('Auth error', status, msg, err);
         setError(msg);
       } finally {
+        clearTimeout(slowTimer);
         setLoading(false);
       }
     };
 
     authenticate();
+    return () => clearTimeout(slowTimer);
   }, [setToken, setUser, setCategories, setBudgets, retryKey]);
 
   return (
@@ -99,6 +111,11 @@ export function AuthScreen() {
             <p style={{ color: 'var(--text-tertiary)', fontSize: '14px', fontWeight: 500 }}>
               Загрузка...
             </p>
+            {slowHint && (
+              <p style={{ color: 'rgba(240,240,245,0.5)', fontSize: '12px', marginTop: '8px', textAlign: 'center', maxWidth: 260 }}>
+                Первая загрузка может занять до минуты. Подождите...
+              </p>
+            )}
           </motion.div>
         ) : error ? (
           <motion.div

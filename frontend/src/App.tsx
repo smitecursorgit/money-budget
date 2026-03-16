@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from './store/index.ts';
+import { healthApi } from './api/client.ts';
 import { BottomNav } from './components/ui/BottomNav.tsx';
 import { AuthScreen } from './screens/AuthScreen.tsx';
 import { Dashboard } from './screens/Dashboard.tsx';
@@ -47,6 +48,13 @@ function AppShell() {
 export default function App() {
   const { token, user } = useAppStore();
   const isAuthenticated = !!token && !!user;
+
+  // Pre-warm backend (Render free tier sleeps, first request can take ~50s)
+  useEffect(() => {
+    if (isAuthenticated) {
+      healthApi.ping().catch(() => {});
+    }
+  }, [isAuthenticated]);
 
   return (
     <BrowserRouter>

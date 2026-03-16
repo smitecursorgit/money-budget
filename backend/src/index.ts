@@ -55,6 +55,7 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
+      if (origin === 'null') return callback(null, true); // некоторые WebView
       if (ALLOWED_ORIGINS.has(origin)) return callback(null, true);
       // Production: allow any HTTPS origin (Telegram Mini App can be hosted on Vercel, Netlify, etc.)
       if (isProduction && (origin.startsWith('https://') || origin.startsWith('http://localhost'))) {

@@ -67,6 +67,11 @@ export const authApi = {
   login: (initData: string) => api.post('/auth', { initData }),
 };
 
+/** Pre-warm backend (Render cold start ~50s). Call on app load when authenticated. */
+export const healthApi = {
+  ping: () => api.get('/health', { timeout: 65000 }),
+};
+
 export const voiceApi = {
   parseAudio: (blob: Blob) => {
     const t = (blob.type || '').toLowerCase().split(';')[0].trim();
