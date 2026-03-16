@@ -51,6 +51,7 @@ export function Dashboard() {
   const [detailTransaction, setDetailTransaction] = useState<Transaction | null>(null);
   const [showBalanceEdit, setShowBalanceEdit] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [transactionsLoading, setTransactionsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -130,6 +131,7 @@ export function Dashboard() {
       }
     } finally {
       setRefreshing(false);
+      setTransactionsLoading(false);
     }
   }, [fetchData]);
 
@@ -447,7 +449,9 @@ export function Dashboard() {
           </div>
         </div>
 
-        {recentTransactions.length === 0 ? (
+        {transactionsLoading ? (
+          <TransactionsSkeleton />
+        ) : recentTransactions.length === 0 ? (
           <Card padding="lg" style={{ textAlign: 'center', paddingTop: '28px', paddingBottom: '28px' }}>
             <p style={{ fontSize: '28px', marginBottom: '10px' }}>💸</p>
             <p style={{ color: 'var(--text-tertiary)', fontSize: '14px', lineHeight: 1.5 }}>
@@ -511,6 +515,64 @@ export function Dashboard() {
             )
           : null;
       })()}
+    </div>
+  );
+}
+
+function TransactionsSkeleton() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {[1, 2, 3, 4].map((i) => (
+        <Card key={i} padding="md">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <motion.div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '999px',
+                  background: 'rgba(255,255,255,0.06)',
+                  flexShrink: 0,
+                }}
+                animate={{ opacity: [0.4, 0.7, 0.4] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <motion.div
+                  style={{
+                    width: 100,
+                    height: 14,
+                    borderRadius: '999px',
+                    background: 'rgba(255,255,255,0.08)',
+                  }}
+                  animate={{ opacity: [0.4, 0.7, 0.4] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 + 0.1 }}
+                />
+                <motion.div
+                  style={{
+                    width: 70,
+                    height: 10,
+                    borderRadius: '999px',
+                    background: 'rgba(255,255,255,0.05)',
+                  }}
+                  animate={{ opacity: [0.4, 0.7, 0.4] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 + 0.2 }}
+                />
+              </div>
+            </div>
+            <motion.div
+              style={{
+                width: 56,
+                height: 16,
+                borderRadius: '999px',
+                background: 'rgba(255,255,255,0.08)',
+              }}
+              animate={{ opacity: [0.4, 0.7, 0.4] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 + 0.05 }}
+            />
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }
