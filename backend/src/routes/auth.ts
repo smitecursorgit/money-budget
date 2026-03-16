@@ -40,11 +40,22 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         res.status(401).json({ error: 'Invalid initData' });
         return;
       }
+
+      // Reject initData older than 24 hours (replay attack protection)
+      const authDate = parseInt(telegramData['auth_date'] || '0', 10);
+      if (!authDate || Date.now() / 1000 - authDate > 86400) {
+        res.status(401).json({ error: 'initData expired. Please reopen the app.' });
+        return;
+      }
     }
 
     let tgUser: { id: number; first_name: string; last_name?: string; username?: string };
     try {
-      tgUser = JSON.parse(telegramData['user'] || '{}');
+      // Extract id with regex first to avoid precision loss with large 64-bit IDs
+      const userJson = telegramData['user'] || '{}';
+      const idMatch = /"id"\s*:\s*(\d+)/.exec(userJson);
+      const parsed = JSON.parse(userJson);
+      tgUser = { ...parsed, id: idMatch ? Number(idMatch[1]) : parsed.id };
     } catch {
       res.status(400).json({ error: 'Cannot parse user data' });
       return;
@@ -94,7 +105,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     });
   } catch (err) {
     console.error('Auth route error:', err);
-    res.status(500).json({ error: 'Server error during authentication', detail: err instanceof Error ? err.message : String(err) });
+    res.status(500).json({ error: 'Ошибка авторизации. Попробуйте позже.' });
   }
 });
 

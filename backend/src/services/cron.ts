@@ -19,20 +19,21 @@ export function startCronJobs() {
 
       for (const reminder of dueReminders) {
         try {
-          await sendReminderNotification(
-            Number(reminder.user.telegramId),
-            reminder.title,
-            reminder.amount ? Number(reminder.amount) : undefined
-          );
-
+          // Update DB first — if notification fails, we at least don't re-fire next hour
           const nextDate = computeNextDate(reminder.nextDate, reminder.recurrence);
           if (reminder.recurrence === 'once') {
             await prisma.reminder.update({ where: { id: reminder.id }, data: { isActive: false } });
           } else {
             await prisma.reminder.update({ where: { id: reminder.id }, data: { nextDate } });
           }
+
+          await sendReminderNotification(
+            Number(reminder.user.telegramId),
+            reminder.title,
+            reminder.amount ? Number(reminder.amount) : undefined
+          );
         } catch (err) {
-          console.error(`Failed to send reminder ${reminder.id}:`, err);
+          console.error(`Failed to process reminder ${reminder.id}:`, err);
         }
       }
     } catch (err) {

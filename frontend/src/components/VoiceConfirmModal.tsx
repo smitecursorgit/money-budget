@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, X, Edit3, TrendingUp, TrendingDown } from 'lucide-react';
 import { ParsedEntry, Category } from '../types/index.ts';
 import { Button } from './ui/Button.tsx';
+import { useAppStore } from '../store/index.ts';
 
 interface VoiceConfirmModalProps {
   transcription: string;
@@ -19,6 +20,11 @@ export function VoiceConfirmModal({
   onConfirm,
   onClose,
 }: VoiceConfirmModalProps) {
+  const { user } = useAppStore();
+  const currency = user?.currency || 'RUB';
+  const fmtAmount = (n: number) =>
+    n.toLocaleString('ru', { style: 'currency', currency, maximumFractionDigits: 0 });
+
   const [editing, setEditing] = useState(false);
   const [entry, setEntry] = useState<ParsedEntry>({ ...parsed });
   const [loading, setLoading] = useState(false);
@@ -27,15 +33,22 @@ export function VoiceConfirmModal({
   const isReminder = entry.type === 'reminder';
   const isIncome = entry.type === 'income';
 
+  const needsAmount = entry.type !== 'reminder';
+  const missingAmount = needsAmount && (!entry.amount || entry.amount <= 0);
+
   const handleConfirm = async () => {
+    if (missingAmount) {
+      setSaveError('Укажите сумму операции');
+      return;
+    }
     setSaveError(null);
     setLoading(true);
     try {
       await onConfirm(entry);
       onClose();
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { error?: string; fieldErrors?: Record<string, string[]> } } };
-      const serverMsg = axiosErr?.response?.data?.error;
+      const axiosErr = err as { response?: { data?: { error?: string; fieldErrors?: Record<string, string[]> } }; message?: string };
+      const serverMsg = axiosErr?.response?.data?.error ?? axiosErr?.message;
       const fieldErrors = axiosErr?.response?.data?.fieldErrors;
       if (fieldErrors?.amount) {
         setSaveError('Укажите сумму — она не может быть нулевой');
@@ -124,7 +137,7 @@ export function VoiceConfirmModal({
               {entry.amount && (
                 <Row label="Сумма">
                   <span style={{ fontSize: '22px', fontWeight: 700, color: isIncome ? 'var(--income)' : 'var(--expense)' }}>
-                    {isIncome ? '+' : '-'}{entry.amount.toLocaleString('ru')} ₽
+                    {isIncome ? '+' : '-'}{fmtAmount(entry.amount)}
                   </span>
                 </Row>
               )}
@@ -166,7 +179,13 @@ export function VoiceConfirmModal({
               <Edit3 size={16} />
               {editing ? 'Готово' : 'Изменить'}
             </Button>
-            <Button variant="primary" size="md" onClick={handleConfirm} loading={loading} style={{ flex: 2 }}>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleConfirm}
+              loading={loading}
+              style={{ flex: 2, opacity: missingAmount ? 0.5 : 1 }}
+            >
               <CheckCircle size={16} />
               Сохранить
             </Button>

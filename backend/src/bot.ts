@@ -33,38 +33,48 @@ export function initBot(): TelegramBot | null {
   } else {
     // Polling mode for local development
     bot = new TelegramBot(token, { polling: true });
-    bot.on('polling_error', (err) => {
-      console.error('Bot polling error:', err.message);
-    });
   }
+
+  // Catch all Telegram API / network errors — prevents unhandled rejection crashes
+  bot.on('error', (err) => {
+    console.error('Telegram bot error:', err.message);
+  });
+
+  bot.on('polling_error', (err) => {
+    console.error('Telegram polling error:', err.message);
+  });
 
   bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    bot!.sendMessage(chatId, '👋 Привет! Я — Money Budget.\nВеди учёт доходов и расходов голосом.', {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: '💰 Открыть приложение',
-              web_app: { url: miniAppUrl || 'https://example.com' },
-            },
+    bot!
+      .sendMessage(chatId, '👋 Привет! Я — Money Budget.\nВеди учёт доходов и расходов голосом.', {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: '💰 Открыть приложение',
+                web_app: { url: miniAppUrl || 'https://t.me' },
+              },
+            ],
           ],
-        ],
-      },
-    });
+        },
+      })
+      .catch((err) => console.error('Failed to send /start reply:', err.message));
   });
 
   bot.onText(/\/help/, (msg) => {
-    bot!.sendMessage(
-      msg.chat.id,
-      '🎤 *Как пользоваться:*\n\n' +
-      'Нажми кнопку микрофона и скажи:\n' +
-      '• "сотка на кофе" — расход 100₽\n' +
-      '• "зп 50000" — доход 50 000₽\n' +
-      '• "напомни аренда 5-го" — напоминание\n\n' +
-      '💡 Понимаю сленг: сотка, пятихатка, косарь, штука',
-      { parse_mode: 'Markdown' }
-    );
+    bot!
+      .sendMessage(
+        msg.chat.id,
+        '🎤 *Как пользоваться:*\n\n' +
+          'Нажми кнопку микрофона и скажи:\n' +
+          '• "сотка на кофе" — расход 100₽\n' +
+          '• "зп 50000" — доход 50 000₽\n' +
+          '• "напомни аренда 5-го" — напоминание\n\n' +
+          '💡 Понимаю сленг: сотка, пятихатка, косарь, штука',
+        { parse_mode: 'Markdown' }
+      )
+      .catch((err) => console.error('Failed to send /help reply:', err.message));
   });
 
   console.log(`Telegram bot started (${isProduction ? 'webhook' : 'polling'} mode)`);

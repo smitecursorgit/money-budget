@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { authMiddleware } from '../middleware/auth';
-import { transcribeAudio, parseFinanceText } from '../services/openai';
+import { transcribeAudio, parseFinanceText } from '../services/ai';
 import { prisma } from '../lib/prisma';
 
 /**
@@ -79,7 +79,14 @@ router.post('/parse', authMiddleware, uploadSingle, async (req: Request, res: Re
   // Detect real format from magic bytes, fall back to extension in original filename.
   const ext = detectAudioExt(rawPath, req.file.originalname);
   const filePath = `${rawPath}.${ext}`;
-  fs.renameSync(rawPath, filePath);
+
+  try {
+    fs.renameSync(rawPath, filePath);
+  } catch (renameErr) {
+    fs.unlink(rawPath, () => {});
+    res.status(500).json({ error: 'Не удалось обработать аудиофайл. Попробуйте ещё раз.' });
+    return;
+  }
 
   try {
     const categories = await prisma.category.findMany({

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, Wallet, ChevronRight, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ChevronRight, RefreshCw, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
 import { VoiceButton } from '../components/VoiceButton.tsx';
@@ -34,11 +34,11 @@ export function Dashboard() {
   const { setTransactions } = useTransactionStore();
   const navigate = useNavigate();
 
-  // Load from cache instantly — shows data before first API call completes
-  const cached = readCache();
-  const [summary, setSummary] = useState<StatsSummary | null>(cached?.summary ?? null);
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(cached?.transactions ?? []);
-  const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>(cached?.reminders ?? []);
+  // Read cache only once on mount (useRef avoids repeated localStorage reads on re-renders)
+  const cachedRef = useRef(readCache());
+  const [summary, setSummary] = useState<StatsSummary | null>(cachedRef.current?.summary ?? null);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>(cachedRef.current?.transactions ?? []);
+  const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>(cachedRef.current?.reminders ?? []);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -280,12 +280,25 @@ export function Dashboard() {
       <motion.div {...fadeUp} transition={{ delay: 0.2, ...fadeUp.transition }} style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', padding: '0 4px' }}>
           <p className="section-title" style={{ padding: 0, margin: 0 }}>Последние операции</p>
-          <button
-            onClick={() => navigate('/transactions')}
-            style={{ background: 'none', color: 'var(--accent-light)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '2px' }}
-          >
-            Все <ChevronRight size={14} />
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => navigate('/transactions', { state: { openAdd: true } })}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                background: 'rgba(108,99,255,0.2)', border: '1px solid rgba(108,99,255,0.35)',
+                borderRadius: '10px', padding: '5px 10px',
+                color: 'var(--accent-light)', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              <Plus size={13} /> Добавить
+            </button>
+            <button
+              onClick={() => navigate('/transactions')}
+              style={{ background: 'none', color: 'var(--text-tertiary)', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '2px' }}
+            >
+              Все <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
         {recentTransactions.length === 0 ? (
           <Card padding="lg" style={{ textAlign: 'center' }}>

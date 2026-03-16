@@ -9,8 +9,12 @@ export function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [retryKey, setRetryKey] = useState(0);
+
   useEffect(() => {
     const authenticate = async () => {
+      setError(null);
+      setLoading(true);
       try {
         // WebApp methods only work inside Telegram — wrap safely
         try {
@@ -46,7 +50,7 @@ export function AuthScreen() {
     };
 
     authenticate();
-  }, [setToken, setUser, setCategories]);
+  }, [setToken, setUser, setCategories, retryKey]);
 
   return (
     <div
@@ -87,7 +91,22 @@ export function AuthScreen() {
           style={{ textAlign: 'center' }}
         >
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>⚠️</div>
-          <p style={{ color: 'var(--expense)', fontWeight: 600 }}>{error}</p>
+          <p style={{ color: 'var(--expense)', fontWeight: 600, marginBottom: '16px' }}>{error}</p>
+          <button
+            onClick={() => setRetryKey((k) => k + 1)}
+            style={{
+              padding: '10px 24px',
+              borderRadius: '12px',
+              background: '#6c63ff',
+              color: '#fff',
+              border: 'none',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Попробовать снова
+          </button>
         </motion.div>
       ) : null}
     </div>

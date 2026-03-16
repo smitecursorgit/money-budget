@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { voiceApi } from '../api/client.ts';
@@ -15,6 +15,7 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
   const [state, setState] = useState<State>('idle');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
@@ -55,16 +56,30 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
 
       mediaRecorder.start();
       setState('recording');
+
+      // Auto-stop after 60 seconds
+      maxTimerRef.current = setTimeout(() => {
+        if (mediaRecorderRef.current?.state === 'recording') {
+          mediaRecorderRef.current.stop();
+        }
+      }, 60000);
     } catch {
       onError?.('Нет доступа к микрофону');
     }
   }, [onResult, onError]);
 
   const stopRecording = useCallback(() => {
+    if (maxTimerRef.current) {
+      clearTimeout(maxTimerRef.current);
+      maxTimerRef.current = null;
+    }
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
   }, []);
+
+  // Clean up timer on unmount
+  useEffect(() => () => { if (maxTimerRef.current) clearTimeout(maxTimerRef.current); }, []);
 
   // Tap-to-toggle: single click starts/stops recording.
   // No onPointerDown/Up to avoid double-trigger (pointerDown + click = two events).
@@ -138,7 +153,7 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
           style={{ fontSize: '13px', color: 'rgba(240,240,245,0.5)', textAlign: 'center' }}
         >
           {state === 'idle' && 'Нажмите и скажите команду'}
-          {state === 'recording' && 'Говорите... отпустите для остановки'}
+          {state === 'recording' && 'Говорите... нажмите для остановки'}
           {state === 'processing' && 'Распознаём...'}
         </motion.p>
       </AnimatePresence>

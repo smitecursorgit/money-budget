@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Bell, BellOff, Trash2, Calendar } from 'lucide-react';
+import { Plus, Bell, BellOff, Trash2, Calendar, Pencil } from 'lucide-react';
 import { Card } from '../components/ui/Card.tsx';
 import { Button } from '../components/ui/Button.tsx';
 import { Badge } from '../components/ui/Badge.tsx';
@@ -20,25 +20,41 @@ export function Reminders() {
   const { user } = useAppStore();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [editTarget, setEditTarget] = useState<Reminder | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const currency = user?.currency || 'RUB';
   const fmt = (n: number) =>
     n.toLocaleString('ru', { style: 'currency', currency, maximumFractionDigits: 0 });
 
   const load = useCallback(async () => {
-    const { data } = await remindersApi.list();
-    setReminders(data);
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await remindersApi.list();
+      setReminders(data);
+    } catch {
+      setError('Не удалось загрузить напоминания');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
   const handleToggle = async (r: Reminder) => {
-    await remindersApi.update(r.id, { isActive: !r.isActive });
+    // Optimistic update
     setReminders((prev) => prev.map((x) => (x.id === r.id ? { ...x, isActive: !x.isActive } : x)));
+    try {
+      await remindersApi.update(r.id, { isActive: !r.isActive });
+    } catch {
+      // Rollback on failure
+      setReminders((prev) => prev.map((x) => (x.id === r.id ? { ...x, isActive: r.isActive } : x)));
+    }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string): Promise<void> => {
     await remindersApi.remove(id);
     setReminders((prev) => prev.filter((r) => r.id !== id));
   };
@@ -73,7 +89,16 @@ export function Reminders() {
         </div>
       </div>
 
-      {reminders.length === 0 ? (
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
+          Загрузка...
+        </div>
+      ) : error ? (
+        <Card padding="lg" style={{ textAlign: 'center' }}>
+          <p style={{ color: 'var(--expense)', marginBottom: '12px' }}>{error}</p>
+          <Button variant="secondary" size="sm" onClick={load}>Повторить</Button>
+        </Card>
+      ) : reminders.length === 0 ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
           <Card padding="lg" style={{ textAlign: 'center' }}>
             <Calendar size={32} color="rgba(240,240,245,0.15)" style={{ margin: '0 auto 12px' }} />
@@ -100,6 +125,7 @@ export function Reminders() {
                     urgencyColor={getUrgencyColor(r.nextDate)}
                     onToggle={handleToggle}
                     onDelete={handleDelete}
+                    onEdit={setEditTarget}
                   />
                 ))}
               </div>
@@ -119,6 +145,7 @@ export function Reminders() {
                     urgencyColor="var(--text-tertiary)"
                     onToggle={handleToggle}
                     onDelete={handleDelete}
+                    onEdit={setEditTarget}
                   />
                 ))}
               </div>
@@ -129,9 +156,30 @@ export function Reminders() {
 
       <AnimatePresence>
         {showForm && (
-          <AddReminderModal
+          <ReminderFormModal
+            title="Новое напоминание"
+            initial={{ title: '', amount: '', recurrence: 'monthly', nextDate: new Date().toISOString().slice(0, 10) }}
             onClose={() => setShowForm(false)}
-            onSaved={load}
+            onSubmit={async (data) => {
+              await remindersApi.create(data);
+              await load();
+            }}
+          />
+        )}
+        {editTarget && (
+          <ReminderFormModal
+            title="Редактировать напоминание"
+            initial={{
+              title: editTarget.title,
+              amount: editTarget.amount ? String(editTarget.amount) : '',
+              recurrence: editTarget.recurrence,
+              nextDate: new Date(editTarget.nextDate).toISOString().slice(0, 10),
+            }}
+            onClose={() => setEditTarget(null)}
+            onSubmit={async (data) => {
+              await remindersApi.update(editTarget.id, data);
+              await load();
+            }}
           />
         )}
       </AnimatePresence>
@@ -146,14 +194,28 @@ function ReminderCard({
   urgencyColor,
   onToggle,
   onDelete,
+  onEdit,
 }: {
   reminder: Reminder;
   fmt: (n: number) => string;
   daysUntil: string;
   urgencyColor: string;
   onToggle: (r: Reminder) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
+  onEdit: (r: Reminder) => void;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    try {
+      await onDelete(r.id);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <Card padding="md" style={{ opacity: r.isActive ? 1 : 0.55 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -189,26 +251,53 @@ function ReminderCard({
               {fmt(r.amount)}
             </p>
           )}
-          <div style={{ display: 'flex', gap: '6px' }}>
-            <button
-              onClick={() => onToggle(r)}
-              style={{
-                padding: '5px',
-                borderRadius: '8px',
-                background: 'rgba(255,255,255,0.05)',
-                border: 'none',
-                cursor: 'pointer',
-                color: r.isActive ? '#f59e0b' : 'rgba(240,240,245,0.3)',
-              }}
-            >
-              {r.isActive ? <Bell size={14} /> : <BellOff size={14} />}
-            </button>
-            <button
-              onClick={() => onDelete(r.id)}
-              style={{ padding: '5px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: 'none', cursor: 'pointer', color: '#ef4444' }}
-            >
-              <Trash2 size={14} />
-            </button>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {confirmDelete ? (
+              <>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={deleting}
+                  style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', borderRadius: '8px', padding: '4px 8px', fontSize: '12px', cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.6 : 1 }}
+                >
+                  {deleting ? '...' : 'Да'}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={deleting}
+                  style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(240,240,245,0.5)', border: 'none', borderRadius: '8px', padding: '4px 8px', fontSize: '12px', cursor: 'pointer' }}
+                >
+                  Нет
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => onEdit(r)}
+                  style={{ padding: '5px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer', color: 'rgba(240,240,245,0.4)' }}
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  onClick={() => onToggle(r)}
+                  style={{
+                    padding: '5px',
+                    borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: r.isActive ? '#f59e0b' : 'rgba(240,240,245,0.3)',
+                  }}
+                >
+                  {r.isActive ? <Bell size={14} /> : <BellOff size={14} />}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  style={{ padding: '5px', borderRadius: '8px', background: 'rgba(239,68,68,0.1)', border: 'none', cursor: 'pointer', color: '#ef4444' }}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -216,25 +305,42 @@ function ReminderCard({
   );
 }
 
-function AddReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState('');
-  const [recurrence, setRecurrence] = useState('monthly');
-  const [nextDate, setNextDate] = useState(new Date().toISOString().slice(0, 10));
+function ReminderFormModal({
+  title,
+  initial,
+  onClose,
+  onSubmit,
+}: {
+  title: string;
+  initial: { title: string; amount: string; recurrence: string; nextDate: string };
+  onClose: () => void;
+  onSubmit: (data: { title: string; amount?: number; recurrence: string; nextDate: string }) => Promise<void>;
+}) {
+  const [reminderTitle, setReminderTitle] = useState(initial.title);
+  const [amount, setAmount] = useState(initial.amount);
+  const [recurrence, setRecurrence] = useState(initial.recurrence);
+  const [nextDate, setNextDate] = useState(initial.nextDate);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
-    if (!title.trim()) return;
+    if (!reminderTitle.trim()) {
+      setError('Введите название напоминания');
+      return;
+    }
+    setError(null);
     setLoading(true);
     try {
-      await remindersApi.create({
-        title,
+      await onSubmit({
+        title: reminderTitle,
         amount: amount ? parseFloat(amount) : undefined,
         recurrence,
         nextDate,
       });
-      onSaved();
       onClose();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setError(msg || 'Не удалось сохранить. Попробуйте ещё раз.');
     } finally {
       setLoading(false);
     }
@@ -254,11 +360,11 @@ function AddReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
         onClick={(e) => e.stopPropagation()}
         style={{ width: '100%', background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '20px', backdropFilter: 'blur(40px)' }}
       >
-        <h3 style={{ fontWeight: 700, marginBottom: '16px' }}>Новое напоминание</h3>
+        <h3 style={{ fontWeight: 700, marginBottom: '16px' }}>{title}</h3>
         <input
           type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          value={reminderTitle}
+          onChange={(e) => setReminderTitle(e.target.value)}
           placeholder="Название (например: Аренда)"
           style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '10px' }}
         />
@@ -282,8 +388,13 @@ function AddReminderModal({ onClose, onSaved }: { onClose: () => void; onSaved: 
           type="date"
           value={nextDate}
           onChange={(e) => setNextDate(e.target.value)}
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '16px' }}
+          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: error ? '8px' : '16px' }}
         />
+        {error && (
+          <div style={{ marginBottom: '12px', padding: '10px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', fontSize: '13px', color: '#f87171' }}>
+            {error}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '10px' }}>
           <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
           <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>Сохранить</Button>

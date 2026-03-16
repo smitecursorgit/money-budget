@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { User, Category, Transaction } from '../types/index.ts';
 
-function loadUser(): User | null {
+function loadFromStorage<T>(key: string): T | null {
   try {
-    const raw = localStorage.getItem('user');
-    return raw ? (JSON.parse(raw) as User) : null;
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
   } catch {
     return null;
   }
@@ -22,8 +22,9 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set) => ({
   token: localStorage.getItem('token'),
-  user: loadUser(),
-  categories: [],
+  user: loadFromStorage<User>('user'),
+  // Restore categories from localStorage so they're available offline / before API responds
+  categories: loadFromStorage<Category[]>('categories') ?? [],
   setToken: (token) => {
     localStorage.setItem('token', token);
     set({ token });
@@ -32,10 +33,14 @@ export const useAppStore = create<AppState>((set) => ({
     localStorage.setItem('user', JSON.stringify(user));
     set({ user });
   },
-  setCategories: (categories) => set({ categories }),
+  setCategories: (categories) => {
+    localStorage.setItem('categories', JSON.stringify(categories));
+    set({ categories });
+  },
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('categories');
     set({ token: null, user: null, categories: [] });
   },
 }));

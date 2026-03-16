@@ -10,6 +10,11 @@ export default defineConfig({
         target: 'http://127.0.0.1:3001',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
+        configure: (proxy) => {
+          proxy.on('error', (err) => console.error('[proxy error]', err.message));
+          proxy.on('proxyReq', (_pr, req) => console.log('[proxy →]', req.method, req.url));
+          proxy.on('proxyRes', (res, req) => console.log('[proxy ←]', res.statusCode, req.url));
+        },
       },
     },
   },

@@ -5,6 +5,15 @@ import path from 'path';
 import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 
+// Prevent the process from crashing on unhandled async errors
+process.on('unhandledRejection', (reason: unknown) => {
+  console.error('Unhandled Promise rejection:', reason);
+});
+
+process.on('uncaughtException', (err: Error) => {
+  console.error('Uncaught exception:', err.message, err.stack);
+});
+
 import authRouter from './routes/auth';
 import voiceRouter from './routes/voice';
 import transactionsRouter from './routes/transactions';
@@ -18,27 +27,53 @@ import { startCronJobs } from './services/cron';
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001');
 
+const ALLOWED_ORIGINS = new Set(
+  [
+    process.env.MINI_APP_URL,
+    // Telegram WebApp always sends requests without Origin or with t.me/telegram.org
+    'https://web.telegram.org',
+    'https://telegram.org',
+    // Local development
+    process.env.NODE_ENV !== 'production' ? 'http://localhost:5173' : null,
+    process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:5173' : null,
+  ].filter(Boolean) as string[]
+);
+
 app.use(
   cors({
-    origin: (_origin, callback) => callback(null, true),
+    origin: (origin, callback) => {
+      // Allow requests with no Origin header (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      if (ALLOWED_ORIGINS.has(origin)) return callback(null, true);
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
   })
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiters
+app.use((req, _res, next) => {
+  console.log(`→ ${req.method} ${req.path} [origin:${req.headers.origin || '-'}, ip:${req.ip}]`);
+  next();
+});
+
+const isDev = process.env.NODE_ENV !== 'production';
+
+// Rate limiters (disabled in development to avoid false triggers during hot-reloads)
 const authLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
+  windowMs: 10 * 60 * 1000,
   max: 20,
+  skip: () => isDev,
   message: { error: 'Слишком много запросов. Попробуйте через 10 минут.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const voiceLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   max: 10,
+  skip: () => isDev,
   message: { error: 'Слишком много голосовых запросов. Подождите минуту.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -47,8 +82,8 @@ const voiceLimiter = rateLimit({
 const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-app.use('/auth', authLimiter, authRouter);
-app.use('/voice', voiceLimiter, voiceRouter);
+app.use('/auth', ...(isDev ? [] : [authLimiter]), authRouter);
+app.use('/voice', ...(isDev ? [] : [voiceLimiter]), voiceRouter);
 app.use('/transactions', transactionsRouter);
 app.use('/categories', categoriesRouter);
 app.use('/stats', statsRouter);

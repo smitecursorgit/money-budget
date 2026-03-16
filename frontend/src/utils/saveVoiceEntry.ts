@@ -43,10 +43,14 @@ export async function saveVoiceEntry(entry: ParsedEntry, categories: Category[])
     return;
   }
 
+  if (!entry.amount || entry.amount <= 0) {
+    throw new Error('Укажите сумму операции');
+  }
+
   const matchedCategory = findCategory(categories, entry.category, entry.type);
 
   await transactionsApi.create({
-    amount: entry.amount || 0,
+    amount: entry.amount,
     type: entry.type,
     categoryId: matchedCategory?.id,
     date: entry.date,

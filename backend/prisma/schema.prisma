@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "darwin-arm64"]
 }
 
 datasource db {
@@ -60,6 +61,7 @@ model Transaction {
 
   @@index([userId, date])
   @@index([userId, type])
+  @@index([userId, type, date])
   @@map("transactions")
 }
 

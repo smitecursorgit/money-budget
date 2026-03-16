@@ -7,12 +7,44 @@ import { categoriesApi, settingsApi } from '../api/client.ts';
 import { useAppStore } from '../store/index.ts';
 import { Category } from '../types/index.ts';
 
-const CURRENCIES = ['RUB', 'USD', 'EUR', 'GBP', 'KZT', 'UAH', 'BYN'];
+const CURRENCIES = ['RUB', 'USD', 'EUR', 'GBP', 'KZT', 'UAH', 'BYN', 'TRY', 'AED', 'CNY', 'JPY'];
 const TIMEZONES = [
-  'Europe/Moscow', 'Europe/Kaliningrad', 'Europe/Samara',
-  'Asia/Yekaterinburg', 'Asia/Omsk', 'Asia/Krasnoyarsk',
-  'Asia/Irkutsk', 'Asia/Yakutsk', 'Asia/Vladivostok',
-  'Europe/Kiev', 'Asia/Almaty', 'Europe/Minsk',
+  // Russia
+  'Europe/Kaliningrad',
+  'Europe/Moscow',
+  'Europe/Samara',
+  'Asia/Yekaterinburg',
+  'Asia/Omsk',
+  'Asia/Krasnoyarsk',
+  'Asia/Irkutsk',
+  'Asia/Yakutsk',
+  'Asia/Vladivostok',
+  'Asia/Magadan',
+  'Asia/Kamchatka',
+  // CIS
+  'Europe/Minsk',
+  'Europe/Kyiv',
+  'Asia/Almaty',
+  'Asia/Tashkent',
+  'Asia/Baku',
+  'Asia/Tbilisi',
+  'Asia/Yerevan',
+  // Europe
+  'UTC',
+  'Europe/London',
+  'Europe/Berlin',
+  'Europe/Paris',
+  'Europe/Istanbul',
+  // Asia & other
+  'Asia/Dubai',
+  'Asia/Tashkent',
+  'Asia/Karachi',
+  'Asia/Kolkata',
+  'Asia/Bangkok',
+  'Asia/Shanghai',
+  'Asia/Tokyo',
+  'America/New_York',
+  'America/Los_Angeles',
 ];
 const EMOJI_LIST = ['💰', '🛒', '☕', '🚇', '🏠', '🍽️', '🎬', '💊', '🚬', '📱', '📦', '💼', '💻', '🎮', '🏋️', '✈️', '🎓', '💈'];
 const COLORS = ['#6c63ff', '#22c55e', '#ef4444', '#f59e0b', '#3b82f6', '#ec4899', '#10b981', '#f97316', '#8b5cf6', '#06b6d4'];

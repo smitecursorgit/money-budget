@@ -5,10 +5,57 @@ import { prisma } from '../lib/prisma';
 const router = Router();
 router.use(authMiddleware);
 
+function parseDate(value: unknown): Date | null {
+  if (!value || typeof value !== 'string') return null;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+/** Returns the UTC offset in milliseconds for a timezone at a given point in time. */
+function getTzOffsetMs(tz: string, date: Date): number {
+  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
+  return tzDate.getTime() - utcDate.getTime();
+}
+
+/**
+ * Calculates the current billing period boundaries in UTC,
+ * correctly adjusted for the user's timezone.
+ */
+function getCurrentPeriod(tz: string, periodStart: number): { dateFrom: Date; dateTo: Date } {
+  const now = new Date();
+  const offsetMs = getTzOffsetMs(tz, now);
+
+  // Shift `now` by the offset to get a Date whose UTC fields equal local wall-clock time
+  const localNow = new Date(now.getTime() + offsetMs);
+  const year = localNow.getUTCFullYear();
+  const month = localNow.getUTCMonth(); // 0-based
+  const day = localNow.getUTCDate();
+
+  let dateFrom: Date;
+  let dateTo: Date;
+
+  if (day >= periodStart) {
+    dateFrom = new Date(Date.UTC(year, month, periodStart) - offsetMs);
+    dateTo = new Date(Date.UTC(year, month + 1, periodStart) - offsetMs);
+  } else {
+    dateFrom = new Date(Date.UTC(year, month - 1, periodStart) - offsetMs);
+    dateTo = new Date(Date.UTC(year, month, periodStart) - offsetMs);
+  }
+
+  return { dateFrom, dateTo };
+}
+
 router.get('/summary', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const { from, to } = req.query;
+    const fromParam = parseDate(req.query.from);
+    const toParam = parseDate(req.query.to);
+
+    if ((req.query.from && !fromParam) || (req.query.to && !toParam)) {
+      res.status(400).json({ error: 'Неверный формат даты. Используйте ISO 8601.' });
+      return;
+    }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     const tz = user?.timezone || 'Europe/Moscow';
@@ -17,37 +64,26 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
     let dateFrom: Date;
     let dateTo: Date;
 
-    if (from && to) {
-      dateFrom = new Date(from as string);
-      dateTo = new Date(to as string);
+    if (fromParam && toParam) {
+      dateFrom = fromParam;
+      dateTo = toParam;
     } else {
-      const now = new Date(new Date().toLocaleString('en-US', { timeZone: tz }));
-      const year = now.getFullYear();
-      const month = now.getMonth();
-      const day = now.getDate();
-
-      if (day >= periodStart) {
-        dateFrom = new Date(year, month, periodStart);
-        dateTo = new Date(year, month + 1, periodStart);
-      } else {
-        dateFrom = new Date(year, month - 1, periodStart);
-        dateTo = new Date(year, month, periodStart);
-      }
+      ({ dateFrom, dateTo } = getCurrentPeriod(tz, periodStart));
     }
 
-    const transactions = await prisma.transaction.findMany({
-      where: { userId, date: { gte: dateFrom, lt: dateTo } },
-      select: { amount: true, type: true },
-    });
+    const [incomeAgg, expenseAgg] = await Promise.all([
+      prisma.transaction.aggregate({
+        where: { userId, type: 'income', date: { gte: dateFrom, lt: dateTo } },
+        _sum: { amount: true },
+      }),
+      prisma.transaction.aggregate({
+        where: { userId, type: 'expense', date: { gte: dateFrom, lt: dateTo } },
+        _sum: { amount: true },
+      }),
+    ]);
 
-    type TxRow = { amount: unknown; type: string };
-    const income = (transactions as TxRow[])
-      .filter((t) => t.type === 'income')
-      .reduce((sum: number, t) => sum + Number(t.amount), 0);
-
-    const expense = (transactions as TxRow[])
-      .filter((t) => t.type === 'expense')
-      .reduce((sum: number, t) => sum + Number(t.amount), 0);
+    const income = Number(incomeAgg._sum.amount ?? 0);
+    const expense = Number(expenseAgg._sum.amount ?? 0);
 
     res.json({
       income,
@@ -57,81 +93,106 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
     });
   } catch (err) {
     console.error('Stats summary error:', err);
-    res.status(500).json({ error: 'Failed to load summary' });
+    res.status(500).json({ error: 'Не удалось загрузить сводку' });
   }
 });
 
 router.get('/by-category', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    const { from, to, type } = req.query;
+    const fromParam = parseDate(req.query.from);
+    const toParam = parseDate(req.query.to);
+
+    if ((req.query.from && !fromParam) || (req.query.to && !toParam)) {
+      res.status(400).json({ error: 'Неверный формат даты. Используйте ISO 8601.' });
+      return;
+    }
+
+    const { type } = req.query;
+    const typeFilter = type === 'income' || type === 'expense' ? type : undefined;
 
     const where: Record<string, unknown> = { userId };
-    if (type) where['type'] = type;
-    if (from || to) {
+    if (typeFilter) where['type'] = typeFilter;
+    if (fromParam || toParam) {
       where['date'] = {
-        ...(from ? { gte: new Date(from as string) } : {}),
-        ...(to ? { lte: new Date(to as string) } : {}),
+        ...(fromParam ? { gte: fromParam } : {}),
+        ...(toParam ? { lte: toParam } : {}),
       };
     }
 
-    const transactions = await prisma.transaction.findMany({
+    // DB-side GROUP BY — no loading all rows into JS memory
+    const grouped = await prisma.transaction.groupBy({
+      by: ['categoryId'],
       where,
-      include: { category: { select: { name: true, icon: true, color: true } } },
+      _sum: { amount: true },
+      _count: { id: true },
     });
 
-    const grouped: Record<string, { name: string; icon: string; color: string; total: number; count: number }> = {};
-
-    for (const t of transactions) {
-      const key = t.categoryId || 'uncategorized';
-      const name = t.category?.name || 'Без категории';
-      const icon = t.category?.icon || '📦';
-      const color = t.category?.color || '#71717a';
-
-      if (!grouped[key]) {
-        grouped[key] = { name, icon, color, total: 0, count: 0 };
-      }
-      grouped[key].total += Number(t.amount);
-      grouped[key].count += 1;
+    if (grouped.length === 0) {
+      res.json([]);
+      return;
     }
 
-    const result = Object.values(grouped).sort((a, b) => b.total - a.total);
+    // Batch-fetch category metadata
+    const categoryIds = grouped
+      .map((g) => g.categoryId)
+      .filter((id): id is string => id !== null);
+
+    const categories = categoryIds.length
+      ? await prisma.category.findMany({ where: { id: { in: categoryIds } } })
+      : [];
+
+    const catMap = new Map(categories.map((c) => [c.id, c]));
+
+    const result = grouped
+      .map((g) => {
+        const cat = g.categoryId ? catMap.get(g.categoryId) : undefined;
+        return {
+          name: cat?.name ?? 'Без категории',
+          icon: cat?.icon ?? '📦',
+          color: cat?.color ?? '#71717a',
+          total: Number(g._sum.amount ?? 0),
+          count: g._count.id,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+
     res.json(result);
   } catch (err) {
     console.error('Stats by-category error:', err);
-    res.status(500).json({ error: 'Failed to load category stats' });
+    res.status(500).json({ error: 'Не удалось загрузить статистику по категориям' });
   }
 });
 
 router.get('/monthly', async (req: Request, res: Response): Promise<void> => {
   try {
-  const userId = req.user!.userId;
-  const months = parseInt((req.query.months as string) || '6');
+    const userId = req.user!.userId;
+    const months = Math.min(Math.max(parseInt((req.query.months as string) || '6'), 1), 24);
 
-  const rows = await prisma.$queryRaw<
-    Array<{ month: string; income: string; expense: string }>
-  >`
-    SELECT
-      TO_CHAR(date, 'YYYY-MM') as month,
-      SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
-      SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
-    FROM transactions
-    WHERE user_id = ${userId}
-      AND date >= NOW() - (${months} * INTERVAL '1 month')
-    GROUP BY TO_CHAR(date, 'YYYY-MM')
-    ORDER BY month ASC
-  `;
+    const rows = await prisma.$queryRaw<
+      Array<{ month: string; income: string; expense: string }>
+    >`
+      SELECT
+        TO_CHAR(date, 'YYYY-MM') as month,
+        SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
+        SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
+      FROM transactions
+      WHERE user_id = ${userId}
+        AND date >= NOW() - (${months} * INTERVAL '1 month')
+      GROUP BY TO_CHAR(date, 'YYYY-MM')
+      ORDER BY month ASC
+    `;
 
-  res.json(
-    rows.map((r: { month: string; income: string; expense: string }) => ({
-      month: r.month,
-      income: Number(r.income),
-      expense: Number(r.expense),
-    }))
-  );
+    res.json(
+      rows.map((r) => ({
+        month: r.month,
+        income: Number(r.income),
+        expense: Number(r.expense),
+      }))
+    );
   } catch (err) {
     console.error('Stats monthly error:', err);
-    res.status(500).json({ error: 'Failed to load monthly stats' });
+    res.status(500).json({ error: 'Не удалось загрузить помесячную статистику' });
   }
 });
 

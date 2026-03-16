@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from './store/index.ts';
@@ -9,6 +9,20 @@ import { Transactions } from './screens/Transactions.tsx';
 import { Statistics } from './screens/Statistics.tsx';
 import { Reminders } from './screens/Reminders.tsx';
 import { Settings } from './screens/Settings.tsx';
+
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2 }}
+      style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 function AppShell() {
   return (
@@ -28,45 +42,13 @@ function AppShell() {
   );
 }
 
-function PageWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.2 }}
-      style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
 export default function App() {
-  const { token, user, setCategories } = useAppStore();
-
+  const { token, user } = useAppStore();
   const isAuthenticated = !!token && !!user;
-
-  // If already authenticated from localStorage, load categories silently
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      import('./api/client.ts').then(({ categoriesApi }) => {
-        categoriesApi.list().then((res) => setCategories(res.data)).catch(() => {});
-      });
-    }
-  }, [isAuthenticated, setCategories]);
-
-  if (!isAuthenticated) {
-    return (
-      <BrowserRouter>
-        <AuthScreen />
-      </BrowserRouter>
-    );
-  }
 
   return (
     <BrowserRouter>
-      <AppShell />
+      {isAuthenticated ? <AppShell /> : <AuthScreen />}
     </BrowserRouter>
   );
 }

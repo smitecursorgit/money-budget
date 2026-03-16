@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Search, Mic } from 'lucide-react';
+import { Plus, Trash2, Search, Mic, Pencil } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
 import { Button } from '../components/ui/Button.tsx';
-import { Badge } from '../components/ui/Badge.tsx';
 import { VoiceButton } from '../components/VoiceButton.tsx';
 import { VoiceConfirmModal } from '../components/VoiceConfirmModal.tsx';
 import { transactionsApi } from '../api/client.ts';
@@ -20,13 +20,15 @@ const FILTER_TYPES = [
 const PAGE_SIZE = 50;
 
 export function Transactions() {
+  const location = useLocation();
   const { user, categories } = useAppStore();
   const { transactions, total, setTransactions, removeTransaction } = useTransactionStore();
   const [filterType, setFilterType] = useState('');
   const [search, setSearch] = useState('');
   const [showVoice, setShowVoice] = useState(false);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry } | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddForm, setShowAddForm] = useState((location.state as { openAdd?: boolean })?.openAdd === true);
+  const [editTarget, setEditTarget] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -43,6 +45,8 @@ export function Transactions() {
       if (filterType) params['type'] = filterType;
       const { data } = await transactionsApi.list(params);
       setTransactions(data.transactions, data.total);
+    } catch {
+      // Silent — user sees stale data rather than a blank crash
     } finally {
       setLoading(false);
     }
@@ -65,8 +69,12 @@ export function Transactions() {
   useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: string) => {
-    await transactionsApi.remove(id);
     removeTransaction(id);
+    try {
+      await transactionsApi.remove(id);
+    } catch {
+      await load();
+    }
   };
 
   const handleVoiceConfirm = async (entry: ParsedEntry) => {
@@ -155,7 +163,7 @@ export function Transactions() {
             <Card padding="lg" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <VoiceButton
                 onResult={(t, p) => { setVoiceResult({ transcription: t, parsed: p }); setShowVoice(false); }}
-                onError={() => {}}
+                onError={(msg) => alert(msg)}
               />
             </Card>
           </motion.div>
@@ -189,14 +197,19 @@ export function Transactions() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {txs.map((t) => (
-                <TransactionItem key={t.id} transaction={t} fmt={fmt} onDelete={handleDelete} />
+                <TransactionItem
+                  key={t.id}
+                  transaction={t}
+                  fmt={fmt}
+                  onDelete={handleDelete}
+                  onEdit={setEditTarget}
+                />
               ))}
             </div>
           </motion.div>
         ))
       )}
 
-      {/* Load more button */}
       {transactions.length > 0 && transactions.length < total && !search && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px 0 24px' }}>
           <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
@@ -239,6 +252,15 @@ export function Transactions() {
           onSaved={load}
         />
       )}
+
+      {editTarget && (
+        <EditTransactionModal
+          transaction={editTarget}
+          categories={categories}
+          onClose={() => setEditTarget(null)}
+          onSaved={load}
+        />
+      )}
     </div>
   );
 }
@@ -247,12 +269,25 @@ function TransactionItem({
   transaction: t,
   fmt,
   onDelete,
+  onEdit,
 }: {
   transaction: Transaction;
   fmt: (n: number) => string;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
+  onEdit: (t: Transaction) => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    try {
+      await onDelete(t.id);
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
 
   return (
     <Card padding="md">
@@ -291,25 +326,35 @@ function TransactionItem({
           {confirmDelete ? (
             <div style={{ display: 'flex', gap: '6px' }}>
               <button
-                onClick={() => onDelete(t.id)}
-                style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', borderRadius: '8px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                style={{ background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: 'none', borderRadius: '8px', padding: '4px 10px', fontSize: '12px', cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.6 : 1 }}
               >
-                Да
+                {deleting ? '...' : 'Да'}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
                 style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(240,240,245,0.5)', border: 'none', borderRadius: '8px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}
               >
                 Нет
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              style={{ background: 'none', color: 'rgba(240,240,245,0.2)', border: 'none', padding: '4px', cursor: 'pointer' }}
-            >
-              <Trash2 size={16} />
-            </button>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button
+                onClick={() => onEdit(t)}
+                style={{ background: 'none', color: 'rgba(240,240,245,0.25)', border: 'none', padding: '4px', cursor: 'pointer' }}
+              >
+                <Pencil size={15} />
+              </button>
+              <button
+                onClick={() => setConfirmDelete(true)}
+                style={{ background: 'none', color: 'rgba(240,240,245,0.2)', border: 'none', padding: '4px', cursor: 'pointer' }}
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -317,37 +362,42 @@ function TransactionItem({
   );
 }
 
-function AddTransactionModal({
+function TransactionFormModal({
+  title,
+  initial,
   categories,
   onClose,
-  onSaved,
+  onSubmit,
 }: {
+  title: string;
+  initial: { type: 'expense' | 'income'; amount: string; categoryId: string; date: string; note: string };
   categories: Category[];
   onClose: () => void;
-  onSaved: () => void;
+  onSubmit: (data: { type: 'expense' | 'income'; amount: number; categoryId?: string; date: string; note?: string }) => Promise<void>;
 }) {
-  const [type, setType] = useState<'expense' | 'income'>('expense');
-  const [amount, setAmount] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
-  const [note, setNote] = useState('');
+  const [type, setType] = useState<'expense' | 'income'>(initial.type);
+  const [amount, setAmount] = useState(initial.amount);
+  const [categoryId, setCategoryId] = useState(initial.categoryId);
+  const [date, setDate] = useState(initial.date);
+  const [note, setNote] = useState(initial.note);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const filtered = categories.filter((c) => c.type === type);
 
   const handleSubmit = async () => {
-    if (!amount || parseFloat(amount) <= 0) return;
+    if (!amount || parseFloat(amount) <= 0) {
+      setError('Укажите сумму больше нуля');
+      return;
+    }
+    setError(null);
     setLoading(true);
     try {
-      await transactionsApi.create({
-        amount: parseFloat(amount),
-        type,
-        categoryId: categoryId || undefined,
-        date,
-        note: note || undefined,
-      });
-      onSaved();
+      await onSubmit({ amount: parseFloat(amount), type, categoryId: categoryId || undefined, date, note: note || undefined });
       onClose();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setError(msg || 'Не удалось сохранить. Попробуйте ещё раз.');
     } finally {
       setLoading(false);
     }
@@ -367,12 +417,12 @@ function AddTransactionModal({
         onClick={(e) => e.stopPropagation()}
         style={{ width: '100%', background: 'rgba(20,20,30,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', padding: '20px', backdropFilter: 'blur(40px)' }}
       >
-        <h3 style={{ fontWeight: 700, marginBottom: '16px' }}>Новая операция</h3>
+        <h3 style={{ fontWeight: 700, marginBottom: '16px' }}>{title}</h3>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
           {(['expense', 'income'] as const).map((t) => (
             <button
               key={t}
-              onClick={() => setType(t)}
+              onClick={() => { setType(t); setCategoryId(''); }}
               style={{
                 flex: 1,
                 padding: '10px',
@@ -380,9 +430,7 @@ function AddTransactionModal({
                 border: `1px solid ${type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(255,255,255,0.08)'}`,
                 background: type === t ? (t === 'income' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)') : 'rgba(255,255,255,0.04)',
                 color: type === t ? (t === 'income' ? 'var(--income)' : 'var(--expense)') : 'rgba(240,240,245,0.5)',
-                fontWeight: 600,
-                fontSize: '14px',
-                cursor: 'pointer',
+                fontWeight: 600, fontSize: '14px', cursor: 'pointer',
               }}
             >
               {t === 'income' ? '↑ Доход' : '↓ Расход'}
@@ -415,14 +463,55 @@ function AddTransactionModal({
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Заметка (необязательно)"
-          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: '16px' }}
+          style={{ width: '100%', padding: '12px', borderRadius: '12px', marginBottom: error ? '8px' : '16px' }}
         />
+        {error && (
+          <div style={{ marginBottom: '12px', padding: '10px 12px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', fontSize: '13px', color: '#f87171' }}>
+            {error}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '10px' }}>
           <Button variant="secondary" size="md" onClick={onClose} style={{ flex: 1 }}>Отмена</Button>
           <Button variant="primary" size="md" onClick={handleSubmit} loading={loading} style={{ flex: 2 }}>Сохранить</Button>
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+function AddTransactionModal({ categories, onClose, onSaved }: { categories: Category[]; onClose: () => void; onSaved: () => void }) {
+  return (
+    <TransactionFormModal
+      title="Новая операция"
+      initial={{ type: 'expense', amount: '', categoryId: '', date: new Date().toISOString().slice(0, 10), note: '' }}
+      categories={categories}
+      onClose={onClose}
+      onSubmit={async (data) => {
+        await transactionsApi.create(data);
+        onSaved();
+      }}
+    />
+  );
+}
+
+function EditTransactionModal({ transaction: t, categories, onClose, onSaved }: { transaction: Transaction; categories: Category[]; onClose: () => void; onSaved: () => void }) {
+  return (
+    <TransactionFormModal
+      title="Редактировать операцию"
+      initial={{
+        type: t.type as 'expense' | 'income',
+        amount: String(t.amount),
+        categoryId: t.categoryId || '',
+        date: new Date(t.date).toISOString().slice(0, 10),
+        note: t.note || '',
+      }}
+      categories={categories}
+      onClose={onClose}
+      onSubmit={async (data) => {
+        await transactionsApi.update(t.id, data);
+        onSaved();
+      }}
+    />
   );
 }
 
