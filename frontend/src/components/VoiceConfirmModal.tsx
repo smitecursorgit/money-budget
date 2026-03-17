@@ -324,8 +324,8 @@ function EntryEditCard({
 
   return (
     <div style={{
-      background: 'var(--accent-dim)', border: '1px solid rgba(255,255,255,0.3)',
-      borderRadius: '999px', padding: '14px',
+      background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+      borderRadius: '14px', padding: '14px',
     }}>
       <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
         {(['expense', 'income'] as const).map((t) => (
