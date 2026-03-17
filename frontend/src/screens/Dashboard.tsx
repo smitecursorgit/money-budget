@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { TrendingUp, TrendingDown, ChevronRight, RefreshCw, Plus, X, Pencil } from 'lucide-react';
@@ -21,9 +21,15 @@ const fadeUp = {
 const CACHE_KEY = 'dashboard_cache';
 const CACHE_TTL_MS = 15 * 60 * 1000;
 
-type CacheData = { summary: StatsSummary; transactions: Transaction[]; reminders: Reminder[]; cachedAt: number };
+type CacheData = {
+  summary: StatsSummary;
+  transactions: Transaction[];
+  reminders: Reminder[];
+  total?: number;
+  cachedAt: number;
+};
 
-function readCache(): { summary: StatsSummary; transactions: Transaction[]; reminders: Reminder[] } | null {
+function readCache(): CacheData | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
@@ -33,7 +39,7 @@ function readCache(): { summary: StatsSummary; transactions: Transaction[]; remi
   } catch { return null; }
 }
 
-function writeCache(data: { summary: StatsSummary; transactions: Transaction[]; reminders: Reminder[] }) {
+function writeCache(data: { summary: StatsSummary; transactions: Transaction[]; reminders: Reminder[]; total?: number }) {
   try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, cachedAt: Date.now() })); } catch { /* ignore */ }
 }
 
@@ -44,14 +50,16 @@ export function Dashboard() {
   const navigate = useNavigate();
 
   const cachedRef = useRef(readCache());
-  const [summary, setSummary] = useState<StatsSummary | null>(cachedRef.current?.summary ?? null);
-  const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>(cachedRef.current?.reminders ?? []);
+  const cache = cachedRef.current;
+  const [summary, setSummary] = useState<StatsSummary | null>(cache?.summary ?? null);
+  const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>(cache?.reminders ?? []);
   const recentTransactions = transactions.slice(0, 20);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry[] } | null>(null);
   const [detailTransaction, setDetailTransaction] = useState<Transaction | null>(null);
   const [showBalanceEdit, setShowBalanceEdit] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [transactionsLoading, setTransactionsLoading] = useState(true);
+  // Show loading only when store is empty (cache will be hydrated in useLayoutEffect before paint)
+  const [transactionsLoading, setTransactionsLoading] = useState(transactions.length === 0);
   const [loadError, setLoadError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -91,6 +99,8 @@ export function Dashboard() {
       const newTx: Transaction[] = txRes.value.data.transactions;
       total = txRes.value.data.total;
       safeTransactions = newTx.length > 0 || total === 0 ? newTx : safeTransactions;
+    } else {
+      total = prevCache?.total ?? safeTransactions.length;
     }
     setTransactions(safeTransactions, total);
 
@@ -102,6 +112,7 @@ export function Dashboard() {
       summary: summaryRes.status === 'fulfilled' ? summaryRes.value.data : (prevCache?.summary ?? { income: 0, expense: 0, balance: 0 }),
       transactions: safeTransactions,
       reminders: remRes.status === 'fulfilled' ? remRes.value.data.slice(0, 3) : (prevCache?.reminders ?? []),
+      total,
     });
 
     const allFailed = summaryRes.status === 'rejected' && txRes.status === 'rejected' && remRes.status === 'rejected';
@@ -135,6 +146,17 @@ export function Dashboard() {
     }
   }, [fetchData]);
 
+  // Hydrate from cache immediately (before paint) so we show cached data without loading flash
+  useLayoutEffect(() => {
+    if (transactions.length > 0) return; // Store already has data (e.g. navigated back)
+    const c = readCache();
+    if (c?.transactions?.length) {
+      setTransactions(c.transactions, c.total ?? c.transactions.length);
+      setTransactionsLoading(false);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch fresh data in background (doesn't block UI when we have cache/store data)
   useEffect(() => {
     loadData();
     return () => { if (retryTimerRef.current) clearTimeout(retryTimerRef.current); };
