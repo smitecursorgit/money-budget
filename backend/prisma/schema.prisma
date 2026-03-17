@@ -66,6 +66,7 @@ model Category {
   budget   Budget?  @relation(fields: [budgetId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
+  @@index([userId])
   @@index([budgetId])
   @@map("categories")
 }

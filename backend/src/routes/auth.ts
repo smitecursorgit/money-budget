@@ -89,11 +89,22 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       await migrateUserToBudgets(user.id);
     }
 
-    const budgets = await prisma.budget.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'asc' },
+    const [budgets, currentBudgetId] = await Promise.all([
+      prisma.budget.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'asc' },
+      }),
+      getBudgetId(user.id),
+    ]);
+
+    const budgetId = currentBudgetId ?? undefined;
+    const categoriesWhere = budgetId
+      ? { OR: [{ budgetId }, { userId: user.id, budgetId: null }] }
+      : { userId: user.id };
+    const categories = await prisma.category.findMany({
+      where: categoriesWhere,
+      orderBy: [{ type: 'asc' }, { name: 'asc' }],
     });
-    const currentBudgetId = (await getBudgetId(user.id)) ?? undefined;
 
     const token = jwt.sign(
       { userId: user.id, telegramId: String(tgUser.id) },
@@ -110,9 +121,10 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         currency: user.currency,
         timezone: user.timezone,
         periodStart: user.periodStart,
-        currentBudgetId,
+        currentBudgetId: budgetId,
       },
       budgets,
+      categories,
     });
   } catch (err) {
     console.error('Auth route error:', err);

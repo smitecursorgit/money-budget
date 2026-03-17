@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth';
 import { prisma, withRetry } from '../lib/prisma';
 import { getBudgetId } from '../lib/budget';
@@ -184,23 +185,30 @@ router.get('/monthly', async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.userId;
     const budgetId = await getBudgetId(userId);
     const months = Math.min(Math.max(parseInt((req.query.months as string) || '6'), 1), 24);
+    const cutoffDate = new Date(Date.now() - months * 30 * 24 * 60 * 60 * 1000);
 
-    const where = budgetId
-      ? { OR: [{ budgetId }, { userId, budgetId: null }], date: { gte: new Date(Date.now() - months * 30 * 24 * 60 * 60 * 1000) } }
-      : { userId, date: { gte: new Date(Date.now() - months * 30 * 24 * 60 * 60 * 1000) } };
+    // Aggregate at DB level — do NOT load all rows (was major perf issue for users with many transactions)
+    const budgetCondition = budgetId
+      ? Prisma.sql`(budget_id = ${budgetId} OR (user_id = ${userId} AND budget_id IS NULL))`
+      : Prisma.sql`user_id = ${userId}`;
 
-    const txs = await prisma.transaction.findMany({
-      where,
-      select: { date: true, type: true, amount: true },
-    });
+    type Row = { month: string; type: string; total: string };
+    const rowsRaw = await prisma.$queryRaw<Row[]>(
+      Prisma.sql`
+        SELECT to_char(date, 'YYYY-MM') as month, type, SUM(amount::float) as total
+        FROM transactions
+        WHERE date >= ${cutoffDate}
+          AND ${budgetCondition}
+        GROUP BY to_char(date, 'YYYY-MM'), type
+      `
+    );
 
     const byMonth = new Map<string, { income: number; expense: number }>();
-    for (const t of txs) {
-      const month = t.date.toISOString().slice(0, 7);
-      if (!byMonth.has(month)) byMonth.set(month, { income: 0, expense: 0 });
-      const acc = byMonth.get(month)!;
-      const amt = Number(t.amount);
-      if (t.type === 'income') acc.income += amt;
+    for (const r of rowsRaw) {
+      if (!byMonth.has(r.month)) byMonth.set(r.month, { income: 0, expense: 0 });
+      const acc = byMonth.get(r.month)!;
+      const amt = parseFloat(r.total) || 0;
+      if (r.type === 'income') acc.income += amt;
       else acc.expense += amt;
     }
 

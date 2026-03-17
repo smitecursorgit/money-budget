@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WebApp from '@twa-dev/sdk';
-import { authApi, categoriesApi, healthApi } from '../api/client.ts';
+import { authApi, healthApi } from '../api/client.ts';
 import { useAppStore } from '../store/index.ts';
 
 export function AuthScreen() {
@@ -40,9 +40,7 @@ export function AuthScreen() {
         setToken(data.token);
         setUser(data.user);
         setBudgets(data.budgets ?? []);
-
-        const catRes = await categoriesApi.list();
-        setCategories(catRes.data);
+        setCategories(data.categories ?? []);
       } catch (err: unknown) {
         const axiosErr = err as { response?: { data?: { error?: string; detail?: string }; status?: number } };
         const serverMsg = axiosErr?.response?.data?.error;

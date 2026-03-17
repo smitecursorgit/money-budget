@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { prisma, withRetry } from '../lib/prisma';
-import { getBudgetId } from '../lib/budget';
+import { getBudgetId, invalidateBudgetCache } from '../lib/budget';
 
 const router = Router();
 router.use(authMiddleware);
@@ -64,6 +64,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         where: { id: userId },
         data: { currentBudgetId: budget.id },
       });
+      invalidateBudgetCache(userId);
     }
 
     res.status(201).json(budget);
@@ -132,6 +133,7 @@ router.post('/:id/select', async (req: Request, res: Response): Promise<void> =>
       where: { id: userId },
       data: { currentBudgetId: id },
     });
+    invalidateBudgetCache(userId);
 
     res.json({ currentBudgetId: id });
   } catch (err) {
@@ -168,6 +170,7 @@ router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
         data: { currentBudgetId: next?.id ?? null },
       });
     }
+    invalidateBudgetCache(userId);
 
     res.status(204).send();
   } catch (err) {
