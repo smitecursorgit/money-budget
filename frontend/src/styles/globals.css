@@ -165,7 +165,7 @@ button {
 }
 button:focus, button:focus-visible { outline: none; }
 
-button:hover:not(:disabled):not([data-variant="primary"]):not(.nav-tab-btn):not(.voice-btn):not(.add-btn) {
+button:hover:not(:disabled):not([data-variant="primary"]):not(.nav-tab-btn):not(.voice-btn):not(.add-btn):not(.edit-btn) {
   background-color: rgba(255,255,255,0.05) !important;
 }
 button.nav-tab-btn:hover,

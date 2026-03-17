@@ -869,6 +869,7 @@ function TransactionDetailModal({
               Закрыть
             </button>
             <button
+              className="edit-btn"
               onClick={onEdit}
               style={{
                 flex: 1,

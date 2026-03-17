@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import WebApp from '@twa-dev/sdk';
 import { useAppStore } from './store/index.ts';
 import { healthApi } from './api/client.ts';
+import { AppLoader } from './components/ui/AppLoader.tsx';
 import { BottomNav } from './components/ui/BottomNav.tsx';
 import { AuthScreen } from './screens/AuthScreen.tsx';
 import { Dashboard } from './screens/Dashboard.tsx';
@@ -100,9 +102,17 @@ function AppShell() {
 
 const TG_HEADER_BG = '#0a0f0b'; // тёмный зеленовато-серый, как фон приложения
 
+const INITIAL_LOAD_MS = 500;
+
 export default function App() {
   const { token, user } = useAppStore();
   const isAuthenticated = !!token && !!user;
+  const [isAppReady, setIsAppReady] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsAppReady(true), INITIAL_LOAD_MS);
+    return () => clearTimeout(t);
+  }, []);
 
   // Окрашиваем верхнюю панель Telegram Mini App в цвет фона приложения
   useEffect(() => {
@@ -123,8 +133,31 @@ export default function App() {
   }, [isAuthenticated]);
 
   return (
-    <BrowserRouter>
-      {isAuthenticated ? <AppShell /> : <AuthScreen />}
-    </BrowserRouter>
+    <>
+      <AnimatePresence mode="wait">
+        {!isAppReady ? (
+          <motion.div
+            key="loader"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+          >
+            <AppLoader />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="app"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            style={{ height: '100%', width: '100%' }}
+          >
+            <BrowserRouter>
+              {isAuthenticated ? <AppShell /> : <AuthScreen />}
+            </BrowserRouter>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
