@@ -35,6 +35,8 @@ import remindersRouter from './routes/reminders';
 import settingsRouter from './routes/settings';
 import { initBot, getBot } from './bot';
 import { startCronJobs } from './services/cron';
+import { prisma } from './lib/prisma';
+import { Prisma } from '@prisma/client';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001');
@@ -132,13 +134,23 @@ app.post('/webhook/telegram', express.json(), (req, res) => {
   res.sendStatus(200);
 });
 
-app.get('/health', (_req, res) =>
-  res.json({
-    status: 'ok',
-    ts: new Date().toISOString(),
-    apiUrl: process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL || null,
-  })
-);
+app.get('/health', async (_req, res) => {
+  try {
+    await prisma.$queryRaw(Prisma.sql`SELECT 1`);
+    res.json({
+      status: 'ok',
+      ts: new Date().toISOString(),
+      apiUrl: process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL || null,
+    });
+  } catch (err) {
+    console.error('[health] DB ping failed:', (err as Error).message);
+    res.status(503).json({
+      status: 'error',
+      ts: new Date().toISOString(),
+      error: 'Database unavailable',
+    });
+  }
+});
 
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
 app.listen(PORT, HOST, async () => {
