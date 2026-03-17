@@ -31,7 +31,7 @@ export function Transactions() {
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState((location.state as { openAdd?: boolean })?.openAdd === true);
   const [editTarget, setEditTarget] = useState<Transaction | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(transactions.length === 0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
 
@@ -39,8 +39,8 @@ export function Transactions() {
   const fmt = (n: number) =>
     n.toLocaleString('ru', { style: 'currency', currency, maximumFractionDigits: 0 });
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (background = false) => {
+    if (!background) setLoading(true);
     setOffset(0);
     try {
       const params: Record<string, string | number> = { limit: PAGE_SIZE, offset: 0 };
@@ -71,7 +71,9 @@ export function Transactions() {
     }
   }, [offset, filterType, transactions, setTransactions]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load(transactions.length > 0); // background when we have data from Dashboard
+  }, [load]);
 
   // Open edit modal when navigated from Dashboard with editId
   useEffect(() => {

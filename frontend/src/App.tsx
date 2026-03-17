@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter, useLocation, useNavigate } from 'react-router-dom';
 import { useAppStore } from './store/index.ts';
 import { healthApi } from './api/client.ts';
 import { BottomNav } from './components/ui/BottomNav.tsx';
@@ -11,34 +10,87 @@ import { Statistics } from './screens/Statistics.tsx';
 import { Reminders } from './screens/Reminders.tsx';
 import { Settings } from './screens/Settings.tsx';
 
-function PageWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={{ duration: 0.22, ease: [0.25, 0.46, 0.45, 0.94] }}
-      style={{ flex: 1, minHeight: 0, position: 'relative' }}
-    >
-      {children}
-    </motion.div>
-  );
-}
+const TAB_PATHS = ['/', '/transactions', '/stats', '/reminders', '/settings'] as const;
 
 function AppShell() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const path = location.pathname;
+  const canonicalPath = TAB_PATHS.includes(path as (typeof TAB_PATHS)[number]) ? path : '/';
+
+  useEffect(() => {
+    if (path !== canonicalPath) navigate(canonicalPath, { replace: true });
+  }, [path, canonicalPath, navigate]);
+  const [mountedPaths, setMountedPaths] = useState<readonly string[]>(() => [canonicalPath]);
+
+  useEffect(() => {
+    if (!mountedPaths.includes(canonicalPath)) {
+      setMountedPaths((prev) => [...prev, canonicalPath]);
+    }
+  }, [canonicalPath, mountedPaths]);
+
+  const isActive = (p: string) => p === canonicalPath;
+
   return (
     <div className="app-container">
       <div style={{ position: 'relative', zIndex: 1, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route path="/" element={<PageWrapper><Dashboard /></PageWrapper>} />
-            <Route path="/transactions" element={<PageWrapper><Transactions /></PageWrapper>} />
-            <Route path="/stats" element={<PageWrapper><Statistics /></PageWrapper>} />
-            <Route path="/reminders" element={<PageWrapper><Reminders /></PageWrapper>} />
-            <Route path="/settings" element={<PageWrapper><Settings /></PageWrapper>} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AnimatePresence>
+        <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden' }}>
+          {mountedPaths.includes('/') && (
+            <div
+              style={{
+                display: isActive('/') ? 'block' : 'none',
+                height: '100%',
+                overflow: 'auto',
+              }}
+            >
+              <Dashboard />
+            </div>
+          )}
+          {mountedPaths.includes('/transactions') && (
+            <div
+              style={{
+                display: isActive('/transactions') ? 'block' : 'none',
+                height: '100%',
+                overflow: 'auto',
+              }}
+            >
+              <Transactions />
+            </div>
+          )}
+          {mountedPaths.includes('/stats') && (
+            <div
+              style={{
+                display: isActive('/stats') ? 'block' : 'none',
+                height: '100%',
+                overflow: 'auto',
+              }}
+            >
+              <Statistics />
+            </div>
+          )}
+          {mountedPaths.includes('/reminders') && (
+            <div
+              style={{
+                display: isActive('/reminders') ? 'block' : 'none',
+                height: '100%',
+                overflow: 'auto',
+              }}
+            >
+              <Reminders />
+            </div>
+          )}
+          {mountedPaths.includes('/settings') && (
+            <div
+              style={{
+                display: isActive('/settings') ? 'block' : 'none',
+                height: '100%',
+                overflow: 'auto',
+              }}
+            >
+              <Settings />
+            </div>
+          )}
+        </div>
         <BottomNav />
       </div>
     </div>

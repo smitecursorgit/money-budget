@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Plus, Bell, BellOff, Trash2, Calendar, Pencil } from 'lucide-react';
 import { Card } from '../components/ui/Card.tsx';
@@ -7,6 +7,23 @@ import { Badge } from '../components/ui/Badge.tsx';
 import { remindersApi } from '../api/client.ts';
 import { useAppStore } from '../store/index.ts';
 import { Reminder } from '../types/index.ts';
+
+const CACHE_KEY = 'reminders_cache';
+const CACHE_TTL_MS = 15 * 60 * 1000;
+
+function readRemindersCache(): Reminder[] | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed: { reminders: Reminder[]; cachedAt: number } = JSON.parse(raw);
+    if (Date.now() - parsed.cachedAt > CACHE_TTL_MS) return null;
+    return parsed.reminders ?? null;
+  } catch { return null; }
+}
+
+function writeRemindersCache(reminders: Reminder[]) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ reminders, cachedAt: Date.now() })); } catch { /* ignore */ }
+}
 
 const RECURRENCE_LABELS: Record<string, string> = {
   once: 'Однократно',
@@ -18,22 +35,23 @@ const RECURRENCE_LABELS: Record<string, string> = {
 
 export function Reminders() {
   const { user } = useAppStore();
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const cacheRef = useRef(readRemindersCache());
+  const [reminders, setReminders] = useState<Reminder[]>(() => cacheRef.current ?? []);
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState<Reminder | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cacheRef.current);
   const [error, setError] = useState<string | null>(null);
 
   const currency = user?.currency || 'RUB';
   const fmt = (n: number) =>
     n.toLocaleString('ru', { style: 'currency', currency, maximumFractionDigits: 0 });
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(async (background = false) => {
+    if (!background) { setLoading(true); setError(null); }
     try {
       const { data } = await remindersApi.list();
       setReminders(data);
+      writeRemindersCache(data);
     } catch {
       setError('Не удалось загрузить напоминания');
     } finally {
@@ -41,23 +59,29 @@ export function Reminders() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load(!!cacheRef.current);
+  }, [load]);
 
   const handleToggle = async (r: Reminder) => {
-    // Optimistic update
-    setReminders((prev) => prev.map((x) => (x.id === r.id ? { ...x, isActive: !x.isActive } : x)));
+    const updated = reminders.map((x) => (x.id === r.id ? { ...x, isActive: !x.isActive } : x));
+    setReminders(updated);
+    writeRemindersCache(updated);
     try {
       await remindersApi.update(r.id, { isActive: !r.isActive });
     } catch {
-      // Rollback on failure
-      setReminders((prev) => prev.map((x) => (x.id === r.id ? { ...x, isActive: r.isActive } : x)));
+      const rollback = reminders.map((x) => (x.id === r.id ? { ...x, isActive: r.isActive } : x));
+      setReminders(rollback);
+      writeRemindersCache(rollback);
     }
   };
 
   const handleDelete = async (id: string): Promise<void> => {
+    const updated = reminders.filter((r) => r.id !== id);
     try {
       await remindersApi.remove(id);
-      setReminders((prev) => prev.filter((r) => r.id !== id));
+      setReminders(updated);
+      writeRemindersCache(updated);
     } catch {
       setError('Не удалось удалить напоминание. Попробуйте ещё раз.');
     }

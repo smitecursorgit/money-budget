@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart,
@@ -12,13 +12,31 @@ import {
   Cell,
 } from 'recharts';
 import { Card } from '../components/ui/Card.tsx';
-import { useLocation } from 'react-router-dom';
 import { statsApi } from '../api/client.ts';
 import { useAppStore, useStatsStore } from '../store/index.ts';
 import { CategoryStat, MonthlyStat, StatsSummary } from '../types/index.ts';
 
 type Period = 'month' | 'quarter' | 'year';
 type ChartTab = 'bar' | 'pie-expense' | 'pie-income';
+
+const STATS_CACHE_KEY = 'stats_cache';
+const STATS_CACHE_TTL_MS = 15 * 60 * 1000;
+
+type StatsCacheData = { summary: StatsSummary; monthly: MonthlyStat[]; categoryStats: CategoryStat[]; period: Period; chartTab: ChartTab; cachedAt: number };
+
+function readStatsCache(): StatsCacheData | null {
+  try {
+    const raw = localStorage.getItem(STATS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed: StatsCacheData = JSON.parse(raw);
+    if (Date.now() - parsed.cachedAt > STATS_CACHE_TTL_MS) return null;
+    return parsed;
+  } catch { return null; }
+}
+
+function writeStatsCache(data: Omit<StatsCacheData, 'cachedAt'>) {
+  try { localStorage.setItem(STATS_CACHE_KEY, JSON.stringify({ ...data, cachedAt: Date.now() })); } catch { /* ignore */ }
+}
 
 function formatYAxis(v: number): string {
   if (v === 0) return '0';
@@ -30,13 +48,13 @@ function formatYAxis(v: number): string {
 export function Statistics() {
   const { user } = useAppStore();
   const invalidatedAt = useStatsStore((s) => s.invalidatedAt);
-  const location = useLocation();
   const [period, setPeriod] = useState<Period>('month');
   const [chartTab, setChartTab] = useState<ChartTab>('bar');
   const [summary, setSummary] = useState<StatsSummary | null>(null);
   const [monthly, setMonthly] = useState<MonthlyStat[]>([]);
   const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheRef = useRef(readStatsCache());
+  const [loading, setLoading] = useState(!cacheRef.current);
   const [catLoading, setCatLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,10 +84,25 @@ export function Statistics() {
     return { from, to };
   }, [period]);
 
+  // Hydrate from cache on mount (for page reload / WebView kill)
+  const hasHydrated = useRef(false);
+  useLayoutEffect(() => {
+    if (hasHydrated.current) return;
+    hasHydrated.current = true;
+    const c = readStatsCache();
+    if (c?.summary && c.monthly) {
+      setSummary(c.summary);
+      setMonthly(c.monthly);
+      setCategoryStats(c.categoryStats ?? []);
+      setPeriod(c.period);
+      setChartTab(c.chartTab);
+      setLoading(false);
+    }
+  }, []);
+
   // Load summary + monthly with retry (cold start Render ~50s)
-  const loadBase = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadBase = useCallback(async (background = false) => {
+    if (!background) { setLoading(true); setError(null); }
     const range = getDateRange();
     const months = period === 'month' ? 1 : period === 'quarter' ? 3 : 12;
     const fetchWithRetry = async (retries = 2): Promise<void> => {
@@ -80,6 +113,7 @@ export function Statistics() {
         ]);
         setSummary(sumRes.data);
         setMonthly(monRes.data);
+        writeStatsCache({ summary: sumRes.data, monthly: monRes.data, categoryStats, period, chartTab });
       } catch (e) {
         const err = e as { response?: { status: number; data?: { error?: string } }; message?: string };
         if (retries > 0 && (!err.response || err.response?.status !== 401)) {
@@ -111,11 +145,14 @@ export function Statistics() {
     }
   }, [period, chartTab, getDateRange]);
 
-  // Refetch when transactions change (real-time), when navigating to stats, or when period changes
+  // Refetch when transactions change (real-time) or period changes (screens stay mounted)
+  const isFirstFetch = useRef(true);
   useEffect(() => {
-    loadBase();
+    const background = isFirstFetch.current && !!cacheRef.current;
+    isFirstFetch.current = false;
+    loadBase(background);
     if (chartTab !== 'bar') loadCategoryStats();
-  }, [invalidatedAt, location.pathname, period]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [invalidatedAt, period]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (chartTab !== 'bar') loadCategoryStats();
