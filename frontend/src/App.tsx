@@ -150,7 +150,13 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
-            style={{ height: '100%', width: '100%' }}
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+            }}
           >
             <BrowserRouter>
               {isAuthenticated ? <AppShell /> : <AuthScreen />}

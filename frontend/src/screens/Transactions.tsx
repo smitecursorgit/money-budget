@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Plus, Trash2, Search, Mic, Pencil } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
+import { SkeletonPiece } from '../components/ui/SkeletonPiece.tsx';
 import { Button } from '../components/ui/Button.tsx';
 import { VoiceButton } from '../components/VoiceButton.tsx';
 import { VoiceConfirmModal } from '../components/VoiceConfirmModal.tsx';
@@ -190,8 +191,28 @@ export function Transactions() {
       </AnimatePresence>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
-          Загрузка...
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+          {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 24 }}
+            >
+              <Card padding="md">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <SkeletonPiece width={40} height={40} borderRadius={999} delay={i * 0.1} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <SkeletonPiece width={120} height={14} borderRadius={999} delay={i * 0.1 + 0.05} />
+                      <SkeletonPiece width={80} height={10} borderRadius={999} delay={i * 0.1 + 0.1} />
+                    </div>
+                  </div>
+                  <SkeletonPiece width={56} height={16} borderRadius={999} delay={i * 0.1 + 0.03} />
+                </div>
+              </Card>
+            </motion.div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -200,8 +221,13 @@ export function Transactions() {
           </Card>
         </motion.div>
       ) : (
-        Object.entries(grouped).map(([date, txs]) => (
-          <motion.div key={date} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        Object.entries(grouped).map(([date, txs], groupIdx) => (
+          <motion.div
+            key={date}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: groupIdx * 0.04, type: 'spring', stiffness: 300, damping: 24 }}
+          >
             <p
               style={{
                 fontSize: '12px',
@@ -215,14 +241,21 @@ export function Transactions() {
               {date}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {txs.map((t) => (
-                <TransactionItem
+              {txs.map((t, i) => (
+                <motion.div
+                  key={t.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: groupIdx * 0.04 + i * 0.03, type: 'spring', stiffness: 300, damping: 24 }}
+                >
+                  <TransactionItem
                   key={t.id}
                   transaction={t}
                   fmt={fmt}
                   onDelete={handleDelete}
                   onEdit={setEditTarget}
                 />
+                </motion.div>
               ))}
             </div>
           </motion.div>

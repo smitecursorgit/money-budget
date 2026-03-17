@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { Plus, Bell, BellOff, Trash2, Calendar, Pencil } from 'lucide-react';
 import { Card } from '../components/ui/Card.tsx';
+import { SkeletonPiece } from '../components/ui/SkeletonPiece.tsx';
 import { Button } from '../components/ui/Button.tsx';
 import { Badge } from '../components/ui/Badge.tsx';
 import { remindersApi } from '../api/client.ts';
@@ -118,8 +119,29 @@ export function Reminders() {
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
-          Загрузка...
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <p className="section-title" style={{ padding: '0 4px', marginBottom: '4px' }}>Активные</p>
+          {[1, 2, 3, 4].map((i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 24 }}
+            >
+              <Card padding="md">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                    <SkeletonPiece width={40} height={40} borderRadius={999} delay={i * 0.1} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                      <SkeletonPiece width="80%" height={14} borderRadius={999} delay={i * 0.1 + 0.05} />
+                      <SkeletonPiece width={70} height={10} borderRadius={999} delay={i * 0.1 + 0.1} />
+                    </div>
+                  </div>
+                  <SkeletonPiece width={50} height={14} borderRadius={999} delay={i * 0.1 + 0.03} />
+                </div>
+              </Card>
+            </motion.div>
+          ))}
         </div>
       ) : error ? (
         <Card padding="lg" style={{ textAlign: 'center' }}>
@@ -144,8 +166,14 @@ export function Reminders() {
             <div style={{ marginBottom: '20px' }}>
               <p className="section-title" style={{ padding: '0 4px', marginBottom: '10px' }}>Активные</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {active.map((r) => (
-                  <ReminderCard
+                {active.map((r, i) => (
+                  <motion.div
+                    key={r.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 24 }}
+                  >
+                    <ReminderCard
                     key={r.id}
                     reminder={r}
                     fmt={fmt}
@@ -155,6 +183,7 @@ export function Reminders() {
                     onDelete={handleDelete}
                     onEdit={setEditTarget}
                   />
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -164,8 +193,14 @@ export function Reminders() {
             <div style={{ marginBottom: '20px' }}>
               <p className="section-title" style={{ padding: '0 4px', marginBottom: '10px' }}>Отключённые</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {inactive.map((r) => (
-                  <ReminderCard
+                {inactive.map((r, i) => (
+                  <motion.div
+                    key={r.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05, type: 'spring', stiffness: 300, damping: 24 }}
+                  >
+                    <ReminderCard
                     key={r.id}
                     reminder={r}
                     fmt={fmt}
@@ -175,6 +210,7 @@ export function Reminders() {
                     onDelete={handleDelete}
                     onEdit={setEditTarget}
                   />
+                  </motion.div>
                 ))}
               </div>
             </div>

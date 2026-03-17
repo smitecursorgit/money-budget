@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { TrendingUp, TrendingDown, ChevronRight, RefreshCw, Plus, X, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
+import { SkeletonPiece } from '../components/ui/SkeletonPiece.tsx';
 import { VoiceButton } from '../components/VoiceButton.tsx';
 import { VoiceConfirmModal } from '../components/VoiceConfirmModal.tsx';
 import { statsApi, transactionsApi, remindersApi, budgetsApi } from '../api/client.ts';
@@ -13,9 +14,18 @@ import { ParsedEntry, StatsSummary, Reminder, Transaction } from '../types/index
 import { saveVoiceEntry } from '../utils/saveVoiceEntry.ts';
 
 const fadeUp = {
-  initial: { opacity: 0, y: 16 },
+  initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0 },
   transition: { type: 'spring' as const, stiffness: 280, damping: 26 },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 8 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.05, type: 'spring' as const, stiffness: 300, damping: 24 },
+  }),
 };
 
 const CACHE_KEY = 'dashboard_cache';
@@ -299,23 +309,29 @@ export function Dashboard() {
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               Баланс
             </p>
-            <button
-              onClick={() => user?.currentBudgetId && setShowBalanceEdit(true)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: user?.currentBudgetId ? 'pointer' : 'default',
-                fontSize: '52px',
-                fontWeight: 800,
-                letterSpacing: '-0.03em',
-                color: 'var(--income)',
-                lineHeight: 1.1,
-              }}
-              title={user?.currentBudgetId ? 'Нажмите чтобы изменить начальный баланс' : undefined}
-            >
-              {summary ? fmt(summary.balance) : '—'}
-            </button>
+            {summary ? (
+              <button
+                onClick={() => user?.currentBudgetId && setShowBalanceEdit(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: user?.currentBudgetId ? 'pointer' : 'default',
+                  fontSize: '52px',
+                  fontWeight: 800,
+                  letterSpacing: '-0.03em',
+                  color: 'var(--income)',
+                  lineHeight: 1.1,
+                }}
+                title={user?.currentBudgetId ? 'Нажмите чтобы изменить начальный баланс' : undefined}
+              >
+                {fmt(summary.balance)}
+              </button>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+                <SkeletonPiece width={140} height={48} borderRadius={12} delay={0} />
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
@@ -330,9 +346,13 @@ export function Dashboard() {
                 <TrendingUp size={13} color="var(--income)" />
                 <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Доходы</span>
               </div>
-              <p style={{ fontWeight: 700, color: 'var(--income)', fontSize: '17px', letterSpacing: '-0.02em' }}>
-                {summary ? fmt(summary.income) : '—'}
-              </p>
+              {summary ? (
+                <p style={{ fontWeight: 700, color: 'var(--income)', fontSize: '17px', letterSpacing: '-0.02em' }}>
+                  {fmt(summary.income)}
+                </p>
+              ) : (
+                <SkeletonPiece width={60} height={18} borderRadius={6} delay={0.08} />
+              )}
             </div>
             <div style={{
               flex: 1,
@@ -345,9 +365,13 @@ export function Dashboard() {
                 <TrendingDown size={13} color="var(--expense)" />
                 <span style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Расходы</span>
               </div>
-              <p style={{ fontWeight: 700, color: 'var(--expense)', fontSize: '17px', letterSpacing: '-0.02em' }}>
-                {summary ? fmt(summary.expense) : '—'}
-              </p>
+              {summary ? (
+                <p style={{ fontWeight: 700, color: 'var(--expense)', fontSize: '17px', letterSpacing: '-0.02em' }}>
+                  {fmt(summary.expense)}
+                </p>
+              ) : (
+                <SkeletonPiece width={60} height={18} borderRadius={6} delay={0.12} />
+              )}
             </div>
           </div>
         </div>
@@ -374,17 +398,47 @@ export function Dashboard() {
       </motion.div>
 
       {/* ── Upcoming reminders ── */}
-      <AnimatePresence>
-        {upcomingReminders.length > 0 && (
-          <motion.div
-            {...fadeUp}
-            transition={{ delay: 0.13, ...fadeUp.transition }}
-            style={{ marginBottom: '14px' }}
-          >
-            <p className="section-title" style={{ padding: '0 4px' }}>Ближайшие платежи</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {upcomingReminders.map((r) => (
-                <Card key={r.id} padding="md" onClick={() => navigate('/reminders')}>
+      <motion.div
+        {...fadeUp}
+        transition={{ delay: 0.13, ...fadeUp.transition }}
+        style={{ marginBottom: '14px' }}
+      >
+        <p className="section-title" style={{ padding: '0 4px' }}>Ближайшие платежи</p>
+        {transactionsLoading && upcomingReminders.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {[1, 2].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.13 + i * 0.06, type: 'spring', stiffness: 300, damping: 24 }}
+              >
+                <Card padding="md">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <SkeletonPiece width={38} height={38} borderRadius={999} delay={i * 0.1} />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <SkeletonPiece width={100} height={14} borderRadius={999} delay={i * 0.1 + 0.05} />
+                        <SkeletonPiece width={60} height={10} borderRadius={999} delay={i * 0.1 + 0.1} />
+                      </div>
+                    </div>
+                    <SkeletonPiece width={50} height={14} borderRadius={999} delay={i * 0.1 + 0.03} />
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        ) : upcomingReminders.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {upcomingReminders.map((r, i) => (
+              <motion.div
+                key={r.id}
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                variants={itemVariants}
+              >
+                <Card padding="md" onClick={() => navigate('/reminders')}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div
@@ -417,11 +471,11 @@ export function Dashboard() {
                     )}
                   </div>
                 </Card>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+        ) : null}
+      </motion.div>
 
       {/* ── Recent transactions ── */}
       <motion.div
@@ -482,13 +536,20 @@ export function Dashboard() {
           </Card>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {recentTransactions.map((t) => (
-              <TransactionRow
+            {recentTransactions.map((t, i) => (
+              <motion.div
                 key={t.id}
-                transaction={t}
-                fmt={fmt}
-                onClick={() => setDetailTransaction(t)}
-              />
+                custom={i}
+                initial="hidden"
+                animate="visible"
+                variants={itemVariants}
+              >
+                <TransactionRow
+                  transaction={t}
+                  fmt={fmt}
+                  onClick={() => setDetailTransaction(t)}
+                />
+              </motion.div>
             ))}
           </div>
         )}
@@ -544,56 +605,26 @@ export function Dashboard() {
 function TransactionsSkeleton() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      {[1, 2, 3, 4].map((i) => (
-        <Card key={i} padding="md">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <motion.div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '999px',
-                  background: 'rgba(255,255,255,0.06)',
-                  flexShrink: 0,
-                }}
-                animate={{ opacity: [0.4, 0.7, 0.4] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
-              />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <motion.div
-                  style={{
-                    width: 100,
-                    height: 14,
-                    borderRadius: '999px',
-                    background: 'rgba(255,255,255,0.08)',
-                  }}
-                  animate={{ opacity: [0.4, 0.7, 0.4] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 + 0.1 }}
-                />
-                <motion.div
-                  style={{
-                    width: 70,
-                    height: 10,
-                    borderRadius: '999px',
-                    background: 'rgba(255,255,255,0.05)',
-                  }}
-                  animate={{ opacity: [0.4, 0.7, 0.4] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 + 0.2 }}
-                />
+      {[1, 2, 3, 4, 5].map((i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 24 }}
+        >
+          <Card padding="md">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <SkeletonPiece width={40} height={40} borderRadius={999} delay={i * 0.12} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <SkeletonPiece width={100} height={14} borderRadius={999} delay={i * 0.12 + 0.05} />
+                  <SkeletonPiece width={70} height={10} borderRadius={999} delay={i * 0.12 + 0.1} />
+                </div>
               </div>
+              <SkeletonPiece width={56} height={16} borderRadius={999} delay={i * 0.12 + 0.03} />
             </div>
-            <motion.div
-              style={{
-                width: 56,
-                height: 16,
-                borderRadius: '999px',
-                background: 'rgba(255,255,255,0.08)',
-              }}
-              animate={{ opacity: [0.4, 0.7, 0.4] }}
-              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 + 0.05 }}
-            />
-          </div>
-        </Card>
+          </Card>
+        </motion.div>
       ))}
     </div>
   );

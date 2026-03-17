@@ -12,6 +12,7 @@ import {
   Cell,
 } from 'recharts';
 import { Card } from '../components/ui/Card.tsx';
+import { SkeletonPiece } from '../components/ui/SkeletonPiece.tsx';
 import { statsApi } from '../api/client.ts';
 import { useAppStore, useStatsStore } from '../store/index.ts';
 import { CategoryStat, MonthlyStat, StatsSummary } from '../types/index.ts';
@@ -199,8 +200,31 @@ export function Statistics() {
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
-          Загрузка...
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+            {[1, 2, 3].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 24 }}
+              >
+                <Card padding="md">
+                  <SkeletonPiece width={40} height={10} borderRadius={6} delay={i * 0.1} style={{ marginBottom: 8 }} />
+                  <SkeletonPiece width={70} height={20} borderRadius={8} delay={i * 0.1 + 0.05} />
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, type: 'spring', stiffness: 300, damping: 24 }}
+          >
+            <Card padding="md" style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <SkeletonPiece width="60%" height={12} borderRadius={999} delay={0.3} style={{ marginBottom: 8 }} />
+            </Card>
+          </motion.div>
         </div>
       ) : error ? (
         <Card padding="lg" style={{ textAlign: 'center', marginBottom: '16px' }}>
@@ -297,8 +321,13 @@ export function Statistics() {
                   <EmptyChart />
                 )
               ) : catLoading ? (
-                <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
-                  Загрузка...
+                <div style={{ height: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <SkeletonPiece key={i} width={24} height={24} borderRadius={999} delay={i * 0.08} />
+                    ))}
+                  </div>
+                  <SkeletonPiece width={100} height={12} borderRadius={999} delay={0.2} />
                 </div>
               ) : categoryStats.length > 0 ? (
                 <div>
