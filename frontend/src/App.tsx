@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, useLocation, useNavigate } from 'react-router-dom';
+import WebApp from '@twa-dev/sdk';
 import { useAppStore } from './store/index.ts';
 import { healthApi } from './api/client.ts';
 import { BottomNav } from './components/ui/BottomNav.tsx';
@@ -97,9 +98,22 @@ function AppShell() {
   );
 }
 
+const TG_HEADER_BG = '#0a0f0b'; // тёмный зеленовато-серый, как фон приложения
+
 export default function App() {
   const { token, user } = useAppStore();
   const isAuthenticated = !!token && !!user;
+
+  // Окрашиваем верхнюю панель Telegram Mini App в цвет фона приложения
+  useEffect(() => {
+    try {
+      WebApp.ready();
+      WebApp.setHeaderColor(TG_HEADER_BG);
+      WebApp.setBackgroundColor(TG_HEADER_BG);
+    } catch {
+      // Обычный браузер — игнорируем ошибки Telegram SDK
+    }
+  }, []);
 
   // Pre-warm backend (Render free tier sleeps, first request can take ~50s)
   useEffect(() => {

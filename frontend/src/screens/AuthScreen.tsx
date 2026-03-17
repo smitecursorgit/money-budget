@@ -25,8 +25,8 @@ export function AuthScreen() {
         try {
           WebApp.ready();
           WebApp.expand();
-        WebApp.setHeaderColor('#0a0a0a');
-        WebApp.setBackgroundColor('#0a0a0a');
+          WebApp.setHeaderColor('#0a0f0b');
+          WebApp.setBackgroundColor('#0a0f0b');
         } catch {
           // Running in a regular browser — ignore Telegram SDK errors
         }
