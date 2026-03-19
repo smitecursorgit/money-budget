@@ -590,7 +590,7 @@ function TransactionFormModal({
   );
 }
 
-function AddTransactionModal({ categories, onClose, onSaved }: { categories: Category[]; onClose: () => void; onSaved: (tx?: Transaction) => void }) {
+export function AddTransactionModal({ categories, onClose, onSaved }: { categories: Category[]; onClose: () => void; onSaved: (tx?: Transaction) => void }) {
   return (
     <TransactionFormModal
       title="Новая операция"

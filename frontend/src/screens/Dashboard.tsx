@@ -12,6 +12,7 @@ import { useAppStore, useTransactionStore, useStatsStore } from '../store/index.
 
 import { ParsedEntry, StatsSummary, Reminder, Transaction } from '../types/index.ts';
 import { saveVoiceEntry } from '../utils/saveVoiceEntry.ts';
+import { AddTransactionModal } from './Transactions.tsx';
 
 const fadeUp = {
   initial: { opacity: 0, y: 12 },
@@ -66,6 +67,7 @@ export function Dashboard() {
   const recentTransactions = transactions.slice(0, 20);
   const [voiceResult, setVoiceResult] = useState<{ transcription: string; parsed: ParsedEntry[] } | null>(null);
   const [detailTransaction, setDetailTransaction] = useState<Transaction | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [showBalanceEdit, setShowBalanceEdit] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   // Show loading only when store is empty (cache will be hydrated in useLayoutEffect before paint)
@@ -494,7 +496,7 @@ export function Dashboard() {
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button
               className="add-btn"
-              onClick={() => navigate('/transactions', { state: { openAdd: true } })}
+              onClick={() => setShowAddForm(true)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '4px',
                 background: 'var(--income)',
@@ -554,6 +556,22 @@ export function Dashboard() {
           </div>
         )}
       </motion.div>
+
+      <AnimatePresence>
+        {showAddForm && (
+          <AddTransactionModal
+            key="add"
+            categories={categories}
+            onClose={() => setShowAddForm(false)}
+            onSaved={(tx?: Transaction) => {
+              if (tx) addTransaction(tx);
+              invalidateStats();
+              setShowAddForm(false);
+              fetchData().catch(() => {});
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {voiceResult && (
         <VoiceConfirmModal

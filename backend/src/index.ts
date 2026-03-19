@@ -48,8 +48,15 @@ const ALLOWED_ORIGINS = new Set(
     'https://telegram.org',
     process.env.NODE_ENV !== 'production' ? 'http://localhost:5173' : null,
     process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:5173' : null,
+    process.env.NODE_ENV !== 'production' ? 'http://localhost:5174' : null,
+    process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:5174' : null,
   ].filter(Boolean) as string[]
 );
+
+// В dev разрешаем любой порт localhost (Vite может использовать 5173, 5174 и т.д.)
+const isDev = process.env.NODE_ENV !== 'production';
+const isLocalhostOrigin = (origin: string) =>
+  /^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -59,6 +66,10 @@ app.use(
       if (!origin) return callback(null, true);
       if (origin === 'null') return callback(null, true); // некоторые WebView
       if (ALLOWED_ORIGINS.has(origin)) return callback(null, true);
+      // Dev: allow any localhost/127.0.0.1 (любой порт — Vite может использовать 5173, 5174 и т.д.)
+      if (!isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, origin);
+      }
       // Production: allow any HTTPS origin (Telegram Mini App can be hosted on Vercel, Netlify, etc.)
       if (isProduction && (origin.startsWith('https://') || origin.startsWith('http://localhost'))) {
         return callback(null, origin);
@@ -76,8 +87,6 @@ app.use((req, _res, next) => {
   console.log(`→ ${req.method} ${req.path} [origin:${req.headers.origin || '-'}, ip:${req.ip}]`);
   next();
 });
-
-const isDev = process.env.NODE_ENV !== 'production';
 
 function skipRateLimit(req: express.Request): boolean {
   if (isDev) return true;
