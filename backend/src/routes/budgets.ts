@@ -1,8 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
-import { prisma, withRetry } from '../lib/prisma';
+import { prisma } from '../lib/prisma';
 import { getBudgetId, invalidateBudgetCache } from '../lib/budget';
+import { seedCategoriesForBudget } from '../lib/defaultCategories';
 
 const router = Router();
 router.use(authMiddleware);
@@ -49,13 +50,16 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      res.status(404).json({ error: 'Пользователь не найден. Перезайдите в приложение.' });
+      // 401 — токен от старой БД (миграция Railway→Supabase). Перелогин создаст юзера заново.
+      res.status(401).json({ error: 'Пользователь не найден. Перезайдите в приложение.' });
       return;
     }
 
     const budget = await prisma.budget.create({
       data: { userId, name: parse.data.name },
     });
+
+    await seedCategoriesForBudget(budget.id, userId);
 
     // If first budget, set as current
     const count = await prisma.budget.count({ where: { userId } });

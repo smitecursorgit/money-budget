@@ -3,6 +3,7 @@ generator client {
   binaryTargets = ["native", "darwin-arm64", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
+// Supabase: DATABASE_URL = pooled (6543), DIRECT_URL = direct (5432)
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")

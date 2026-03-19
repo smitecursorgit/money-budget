@@ -217,25 +217,26 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
         </motion.button>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.p
-          key={state}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
-          style={{
-            fontSize: '13px',
-            color: 'var(--text-tertiary)',
-            textAlign: 'center',
-            fontWeight: 400,
-          }}
-        >
-          {state === 'idle' && 'Нажмите и скажите команду'}
-          {state === 'recording' && 'Говорите… нажмите для остановки'}
-          {state === 'processing' && 'Распознаём...'}
-        </motion.p>
-      </AnimatePresence>
+      {(state === 'recording' || state === 'processing') && (
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={state}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
+            style={{
+              fontSize: '13px',
+              color: 'var(--text-tertiary)',
+              textAlign: 'center',
+              fontWeight: 400,
+            }}
+          >
+            {state === 'recording' && 'Говорите… нажмите для остановки'}
+            {state === 'processing' && 'Распознаём...'}
+          </motion.p>
+        </AnimatePresence>
+      )}
     </div>
   );
 }

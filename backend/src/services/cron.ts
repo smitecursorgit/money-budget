@@ -1,8 +1,18 @@
 import cron from 'node-cron';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma';
 import { sendReminderNotification } from '../bot';
 
 export function startCronJobs() {
+  // Keep DB awake (Supabase free tier pauses after 1 week inactivity)
+  cron.schedule('*/10 * * * *', async () => {
+    try {
+      await prisma.$queryRaw(Prisma.sql`SELECT 1`);
+    } catch {
+      // Ignore — DB might be cold, next request will wake it
+    }
+  });
+
   // Check reminders every hour
   cron.schedule('0 * * * *', async () => {
     try {

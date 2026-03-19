@@ -41,10 +41,14 @@ npm run dev       # http://localhost:5173
 
 ### 4. Переменные окружения (backend/.env)
 
+Скопируй `backend/.env.example` в `backend/.env`.
+
+**Рекомендуется: Supabase** (500MB бесплатно) — [supabase.com](https://supabase.com), см. `docs/MIGRATION_TO_SUPABASE.md`
+
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/money_budget"
+DATABASE_URL="postgresql://postgres.[ref]:[PASSWORD]@...pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[ref].supabase.co:5432/postgres"
 JWT_SECRET="your-super-secret-jwt-key"
-OPENAI_API_KEY="sk-..."
 TELEGRAM_BOT_TOKEN="your-bot-token"
 MINI_APP_URL="https://your-domain.com"
 PORT=3001
