@@ -62,7 +62,7 @@ export function Reminders() {
 
   useEffect(() => {
     load(!!cacheRef.current);
-  }, [load]);
+  }, [load, user?.currentBudgetId]);
 
   const handleToggle = async (r: Reminder) => {
     const updated = reminders.map((x) => (x.id === r.id ? { ...x, isActive: !x.isActive } : x));

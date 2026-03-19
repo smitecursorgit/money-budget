@@ -4,7 +4,8 @@ import { Plus, Pencil, Trash2, ChevronRight, Check } from 'lucide-react';
 import { Card } from '../components/ui/Card.tsx';
 import { Button } from '../components/ui/Button.tsx';
 import { categoriesApi, settingsApi, budgetsApi } from '../api/client.ts';
-import { useAppStore } from '../store/index.ts';
+import { useAppStore, useTransactionStore, useStatsStore } from '../store/index.ts';
+import { clearBudgetCaches } from '../utils/clearBudgetCaches.ts';
 import { Category, Budget } from '../types/index.ts';
 
 const CURRENCIES = ['RUB', 'USD', 'EUR', 'GBP', 'KZT', 'UAH', 'BYN', 'TRY', 'AED', 'CNY', 'JPY'];
@@ -50,6 +51,8 @@ const COLORS = ['#6c63ff', '#ffffff', '#ef5350', '#ffa726', '#3b82f6', '#ec4899'
 
 export function Settings() {
   const { user, setUser, categories, setCategories, budgets, setBudgets } = useAppStore();
+  const setTransactions = useTransactionStore((s) => s.setTransactions);
+  const invalidateStats = useStatsStore((s) => s.invalidateStats);
   const [currency, setCurrency] = useState(user?.currency || 'RUB');
   const [timezone, setTimezone] = useState(user?.timezone || 'Europe/Moscow');
   const [periodStart, setPeriodStart] = useState(user?.periodStart || 1);
@@ -151,10 +154,22 @@ export function Settings() {
                           await budgetsApi.remove(b.id);
                           if (user?.currentBudgetId === b.id) {
                             const next = budgets.find((x) => x.id !== b.id);
-                            if (next) await budgetsApi.select(next.id);
+                            if (next) {
+                              await budgetsApi.select(next.id);
+                              clearBudgetCaches();
+                              setTransactions([], 0);
+                              invalidateStats();
+                              setUser({ ...user!, currentBudgetId: next.id });
+                              await loadCategories();
+                            } else {
+                              setUser({ ...user!, currentBudgetId: undefined });
+                              clearBudgetCaches();
+                              setTransactions([], 0);
+                              invalidateStats();
+                              setCategories([]);
+                            }
                             const { data } = await budgetsApi.list();
                             setBudgets(data);
-                            setUser({ ...user!, currentBudgetId: next?.id });
                           }
                           loadBudgets();
                         } catch { setDeleteError('Не удалось удалить'); }
@@ -169,7 +184,11 @@ export function Settings() {
                       onClick={async () => {
                         try {
                           await budgetsApi.select(b.id);
+                          clearBudgetCaches();
+                          setTransactions([], 0);
+                          invalidateStats();
                           setUser({ ...user!, currentBudgetId: b.id });
+                          await loadCategories();
                         } catch { /* ignore */ }
                       }}
                       style={{ padding: '6px 12px', background: '#ffffff', border: 'none', borderRadius: '999px', cursor: 'pointer', color: '#000000', fontSize: '12px', fontWeight: 700, boxShadow: '0 2px 10px rgba(255,255,255,0.30)' }}

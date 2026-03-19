@@ -166,11 +166,11 @@ export function Dashboard() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch fresh data in background (doesn't block UI when we have cache/store data)
+  // Fetch fresh data in background; refetch when profile (budget) changes
   useEffect(() => {
     loadData();
     return () => { if (retryTimerRef.current) clearTimeout(retryTimerRef.current); };
-  }, [loadData]);
+  }, [loadData, user?.currentBudgetId]);
 
   const handleVoiceConfirm = async (entries: ParsedEntry[]) => {
     const results = await Promise.allSettled(entries.map((entry) => saveVoiceEntry(entry, categories)));

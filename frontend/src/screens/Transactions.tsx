@@ -74,7 +74,7 @@ export function Transactions() {
 
   useEffect(() => {
     load(transactions.length > 0); // background when we have data from Dashboard
-  }, [load]);
+  }, [load, user?.currentBudgetId]);
 
   // Open edit modal when navigated from Dashboard with editId
   useEffect(() => {
