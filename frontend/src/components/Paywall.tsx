@@ -43,6 +43,7 @@ export function Paywall() {
         ...user,
         trialStart: data.trialStart,
         subscriptionEndsAt: data.subscriptionEndsAt,
+        subscriptionExempt: data.subscriptionExempt,
         hasSubscriptionAccess: data.hasSubscriptionAccess,
       });
     } catch (e: unknown) {

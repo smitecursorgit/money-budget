@@ -35,6 +35,7 @@ import remindersRouter from './routes/reminders';
 import settingsRouter from './routes/settings';
 import subscriptionRouter from './routes/subscription';
 import yookassaWebhooksRouter from './routes/webhooksYookassa';
+import adminRouter from './routes/admin';
 import { initBot, getBot } from './bot';
 import { startCronJobs } from './services/cron';
 import { prisma } from './lib/prisma';
@@ -83,7 +84,7 @@ app.use(
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Accept-Language'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Accept-Language', 'X-Admin-Secret'],
   })
 );
 app.use(express.json());
@@ -120,9 +121,19 @@ const voiceLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  skip: (req) => skipRateLimit(req),
+  message: { error: 'Слишком много запросов к админ-API.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
+app.use('/admin', adminLimiter, adminRouter);
 app.use('/auth', authLimiter, authRouter);
 app.use('/budgets', budgetsRouter);
 app.use('/voice', voiceLimiter, voiceRouter);

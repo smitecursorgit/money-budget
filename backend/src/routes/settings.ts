@@ -29,16 +29,24 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         trialStart: true,
         subscriptionEndsAt: true,
         createdAt: true,
+        subscriptionExempt: true,
+        telegramId: true,
       },
     });
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
-    const { trialStart, subscriptionEndsAt, createdAt, ...rest } = user;
+    const { trialStart, subscriptionEndsAt, createdAt, telegramId, subscriptionExempt, ...rest } = user;
     res.json({
       ...rest,
-      ...subscriptionUserJson({ trialStart, subscriptionEndsAt, createdAt }),
+      ...subscriptionUserJson({
+        trialStart,
+        subscriptionEndsAt,
+        createdAt,
+        telegramId,
+        subscriptionExempt,
+      }),
     });
   } catch (err) {
     console.error('Settings get error:', err);

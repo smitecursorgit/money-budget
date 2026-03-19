@@ -11,6 +11,8 @@ export interface User {
   subscriptionEndsAt?: string | null;
   /** false = показать Paywall (истёк триал и нет оплаченного периода) */
   hasSubscriptionAccess?: boolean;
+  /** Бессрочный доступ без оплаты (выдан вручную) */
+  subscriptionExempt?: boolean;
 }
 
 export interface Budget {

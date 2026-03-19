@@ -50,6 +50,7 @@ export async function bootstrapAppData(): Promise<void> {
         ...user,
         trialStart: sub.trialStart,
         subscriptionEndsAt: sub.subscriptionEndsAt,
+        subscriptionExempt: sub.subscriptionExempt,
         hasSubscriptionAccess: sub.hasSubscriptionAccess,
       });
     }

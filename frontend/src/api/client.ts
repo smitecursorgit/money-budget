@@ -141,6 +141,7 @@ export const budgetsApi = {
 export type SubscriptionStatus = {
   trialStart: string;
   subscriptionEndsAt: string | null;
+  subscriptionExempt: boolean;
   hasSubscriptionAccess: boolean;
 };
 

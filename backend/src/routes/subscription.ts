@@ -10,7 +10,13 @@ router.get('/status', authMiddleware, async (req: Request, res: Response): Promi
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.userId },
-      select: { trialStart: true, subscriptionEndsAt: true, createdAt: true },
+      select: {
+        trialStart: true,
+        subscriptionEndsAt: true,
+        createdAt: true,
+        subscriptionExempt: true,
+        telegramId: true,
+      },
     });
     if (!user) {
       res.status(404).json({ error: 'User not found' });

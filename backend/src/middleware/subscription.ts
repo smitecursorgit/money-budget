@@ -16,7 +16,13 @@ export async function subscriptionMiddleware(
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { trialStart: true, subscriptionEndsAt: true, createdAt: true },
+      select: {
+        trialStart: true,
+        subscriptionEndsAt: true,
+        createdAt: true,
+        subscriptionExempt: true,
+        telegramId: true,
+      },
     });
     if (!user) {
       res.status(401).json({ error: 'User not found' });

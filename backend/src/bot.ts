@@ -1,4 +1,10 @@
 import TelegramBot from 'node-telegram-bot-api';
+import {
+  syncAdminBotCommands,
+  handleAdminsSubscriptionCommand,
+  getAdminTelegramIds,
+  ensureAdminCommandsForPrivateChat,
+} from './bot/adminSubscription';
 
 let bot: TelegramBot | null = null;
 
@@ -46,6 +52,10 @@ export function initBot(): TelegramBot | null {
 
   bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
+    const fromId = msg.from?.id;
+    if (fromId != null) {
+      void ensureAdminCommandsForPrivateChat(bot!, fromId);
+    }
     bot!
       .sendMessage(chatId, '👋 Привет! Я — Money Budget.\nВеди учёт доходов и расходов голосом.', {
         reply_markup: {
@@ -76,6 +86,19 @@ export function initBot(): TelegramBot | null {
       )
       .catch((err) => console.error('Failed to send /help reply:', err.message));
   });
+
+  bot.onText(/^\/admins(?:@\w+)?(\s|$)/i, (msg) => {
+    void handleAdminsSubscriptionCommand(bot!, msg);
+  });
+
+  void syncAdminBotCommands(bot).catch((err) =>
+    console.error('Failed to sync bot commands:', err instanceof Error ? err.message : err)
+  );
+
+  const adminCount = getAdminTelegramIds().length;
+  if (adminCount === 0) {
+    console.warn('ADMIN_TELEGRAM_IDS not set — /admins disabled, use BotFather only for /start and /help');
+  }
 
   console.log(`Telegram bot started (${isProduction ? 'webhook' : 'polling'} mode)`);
   return bot;
