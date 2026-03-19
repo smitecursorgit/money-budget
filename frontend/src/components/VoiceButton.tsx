@@ -103,48 +103,140 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
   const isRecording = state === 'recording';
   const isProcessing = state === 'processing';
 
+  const btnSize = 80;
+  const ringSize = 112;
+  const ringHalf = ringSize / 2;
+  const innerRingSize = ringSize - 12;
+
+  const primaryRingGradient = isRecording
+    ? 'conic-gradient(from 0deg, rgba(239,83,80,0.95) 0deg, rgba(255,180,180,0.35) 72deg, rgba(239,83,80,0.12) 140deg, rgba(255,255,255,0.22) 220deg, rgba(239,83,80,0.45) 300deg, rgba(239,83,80,0.95) 360deg)'
+    : 'conic-gradient(from 0deg, rgba(102,187,106,0.9) 0deg, rgba(180,230,185,0.4) 80deg, rgba(102,187,106,0.1) 150deg, rgba(255,255,255,0.2) 230deg, rgba(120,200,125,0.5) 310deg, rgba(102,187,106,0.9) 360deg)';
+
+  const secondaryRingGradient = isRecording
+    ? 'conic-gradient(from 180deg, transparent 0deg, rgba(239,83,80,0.5) 90deg, rgba(255,255,255,0.12) 180deg, rgba(239,83,80,0.35) 270deg, transparent 360deg)'
+    : 'conic-gradient(from 180deg, transparent 0deg, rgba(102,187,106,0.45) 100deg, rgba(255,255,255,0.14) 200deg, rgba(102,187,106,0.35) 300deg, transparent 360deg)';
+
+  const rotatePrimarySec = isProcessing ? 32 : isRecording ? 7.2 : 26;
+  const rotateSecondarySec = isProcessing ? 40 : isRecording ? 9.5 : 34;
+
+  /** Кольцо: прозрачное ядро, видимый только периметр (под ширину кнопки) */
+  const donutMask = {
+    WebkitMaskImage: 'radial-gradient(circle, transparent 69%, rgba(0,0,0,0.98) 71.5%)',
+    maskImage: 'radial-gradient(circle, transparent 69%, rgba(0,0,0,0.98) 71.5%)',
+    WebkitMaskRepeat: 'no-repeat' as const,
+    maskRepeat: 'no-repeat' as const,
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-      <div style={{ position: 'relative', width: 100, height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {/* Persistent glow rings behind the button */}
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={`ring-${i}`}
-            style={{
-              position: 'absolute',
-              width: 76,
-              height: 76,
-              borderRadius: '50%',
-              border: isRecording
-                ? '1.5px solid rgba(239,83,80,0.35)'
-                : '1px solid rgba(255,255,255,0.08)',
-              pointerEvents: 'none',
-            }}
-            animate={{
-              scale: [1, 1.6 + i * 0.25],
-              opacity: [isRecording ? 0.5 : 0.25, 0],
-            }}
-            transition={{
-              duration: isRecording ? 1.8 : 3,
-              repeat: Infinity,
-              delay: i * (isRecording ? 0.5 : 0.9),
-              ease: [0.22, 0.61, 0.36, 1],
-            }}
-          />
-        ))}
-
-        {/* Soft radial glow behind button */}
-        <div
+      <div
+        style={{
+          position: 'relative',
+          width: 124,
+          height: 124,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {/* Мягкое «дыхание» свечения */}
+        <motion.div
           style={{
             position: 'absolute',
-            width: 76,
-            height: 76,
+            width: 116,
+            height: 116,
+            left: '50%',
+            top: '50%',
+            marginLeft: -58,
+            marginTop: -58,
             borderRadius: '50%',
-            background: isRecording
-              ? 'radial-gradient(circle, rgba(239,83,80,0.15) 0%, transparent 70%)'
-              : 'radial-gradient(circle, rgba(102,187,106,0.12) 0%, transparent 70%)',
-            transform: 'scale(1.8)',
             pointerEvents: 'none',
+            background: isRecording
+              ? 'radial-gradient(circle, rgba(239,83,80,0.26) 0%, rgba(239,83,80,0.05) 48%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(102,187,106,0.24) 0%, rgba(102,187,106,0.06) 45%, transparent 68%)',
+            filter: 'blur(3px)',
+          }}
+          animate={{
+            scale: [1, 1.07, 1],
+            opacity: isProcessing ? [0.5, 0.68, 0.5] : [0.72, 0.95, 0.72],
+          }}
+          transition={{
+            duration: isRecording ? 3.4 : 5.2,
+            repeat: Infinity,
+            ease: [0.45, 0.05, 0.55, 0.95],
+          }}
+        />
+
+        {/* Внешнее кольцо — медленный оборот */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            marginLeft: -ringHalf,
+            marginTop: -ringHalf,
+            width: ringSize,
+            height: ringSize,
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            background: primaryRingGradient,
+            opacity: isProcessing ? 0.55 : 0.92,
+            ...donutMask,
+          }}
+          animate={{ rotate: 360 }}
+          transition={{
+            duration: rotatePrimarySec,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+        />
+
+        {/* Внутреннее кольцо — в обратную сторону, другой ритм */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            marginLeft: -innerRingSize / 2,
+            marginTop: -innerRingSize / 2,
+            width: innerRingSize,
+            height: innerRingSize,
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            background: secondaryRingGradient,
+            opacity: isProcessing ? 0.35 : 0.65,
+            ...donutMask,
+          }}
+          animate={{ rotate: -360 }}
+          transition={{
+            duration: rotateSecondarySec,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+        />
+
+        {/* Лёгкий орбитальный блик */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            marginLeft: -ringHalf,
+            marginTop: -ringHalf,
+            width: ringSize,
+            height: ringSize,
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            border: isRecording ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.07)',
+            boxShadow: isRecording
+              ? 'inset 0 0 20px rgba(239,83,80,0.12)'
+              : 'inset 0 0 18px rgba(102,187,106,0.1)',
+          }}
+          animate={{ rotate: 360 }}
+          transition={{
+            duration: rotatePrimarySec * 1.45,
+            repeat: Infinity,
+            ease: 'linear',
           }}
         />
 
@@ -153,16 +245,16 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
           onClick={handleClick}
           disabled={isProcessing}
           animate={{
-            scale: isRecording ? 1.04 : 1,
-            opacity: isProcessing ? 0.85 : 1,
+            scale: isRecording ? 1.025 : 1,
+            opacity: isProcessing ? 0.88 : 1,
           }}
-          whileHover={!isProcessing ? { scale: 1.05, boxShadow: '0 8px 32px rgba(102,187,106,0.45)' } : undefined}
-          whileTap={!isProcessing ? { scale: 0.92 } : undefined}
-          transition={{ type: 'spring', stiffness: 260, damping: 24, mass: 0.8 }}
+          whileHover={!isProcessing ? { scale: 1.04, boxShadow: '0 10px 36px rgba(102,187,106,0.42)' } : undefined}
+          whileTap={!isProcessing ? { scale: 0.96 } : undefined}
+          transition={{ type: 'spring', stiffness: 200, damping: 26, mass: 0.95 }}
           style={{
             position: 'relative',
-            width: 76,
-            height: 76,
+            width: btnSize,
+            height: btnSize,
             borderRadius: '50%',
             background: isRecording ? '#ef5350' : 'var(--income)',
             border: 'none',
@@ -172,8 +264,8 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
             justifyContent: 'center',
             overflow: 'visible',
             boxShadow: isRecording
-              ? '0 6px 28px rgba(239,83,80,0.40)'
-              : '0 6px 28px rgba(102,187,106,0.35)',
+              ? '0 8px 32px rgba(239,83,80,0.38)'
+              : '0 8px 32px rgba(102,187,106,0.33)',
             zIndex: 1,
           }}
         >
@@ -184,33 +276,35 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
                 initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+                transition={{ duration: 0.42, ease: [0.33, 0, 0.2, 1] }}
                 style={{ display: 'flex' }}
               >
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+                  transition={{ duration: 1.45, repeat: Infinity, ease: 'linear' }}
                 >
-                  <Loader2 size={30} color={isRecording ? '#fff' : '#1a2e1b'} />
+                  <Loader2 size={32} color={isRecording ? '#fff' : '#1a2e1b'} />
                 </motion.div>
               </motion.div>
             ) : isRecording ? (
               <motion.div
                 key="stop"
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                transition={{ duration: 0.38, ease: [0.33, 0, 0.2, 1] }}
               >
-                <MicOff size={30} color="#fff" />
+                <MicOff size={32} color="#fff" />
               </motion.div>
             ) : (
               <motion.div
                 key="mic"
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                transition={{ duration: 0.38, ease: [0.33, 0, 0.2, 1] }}
               >
-                <Mic size={30} color="#1a2e1b" />
+                <Mic size={32} color="#1a2e1b" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -238,31 +332,5 @@ export function VoiceButton({ onResult, onError }: VoiceButtonProps) {
         </AnimatePresence>
       )}
     </div>
-  );
-}
-
-function RecordingRipple() {
-  return (
-    <>
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
-            border: '1.5px solid rgba(239,83,80,0.40)',
-            pointerEvents: 'none',
-          }}
-          animate={{ scale: [1, 1.9 + i * 0.2], opacity: [0.45, 0] }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            delay: i * 0.55,
-            ease: [0.22, 0.61, 0.36, 1],
-          }}
-        />
-      ))}
-    </>
   );
 }
