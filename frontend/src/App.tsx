@@ -3,8 +3,8 @@ import { BrowserRouter, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import WebApp from '@twa-dev/sdk';
 import { useAppStore } from './store/index.ts';
-import { healthApi } from './api/client.ts';
 import { AppLoader } from './components/ui/AppLoader.tsx';
+import { bootstrapAppData } from './utils/bootstrapAppData.ts';
 import { BottomNav } from './components/ui/BottomNav.tsx';
 import { AuthScreen } from './screens/AuthScreen.tsx';
 import { Dashboard } from './screens/Dashboard.tsx';
@@ -114,17 +114,23 @@ function AppShell() {
 
 const TG_HEADER_BG = '#0a0f0b'; // тёмный зеленовато-серый, как фон приложения
 
-const INITIAL_LOAD_MS = 500;
+/** Есть сохранённая сессия — до bootstrap показываем полноэкранный лоадер */
+function hasStoredSession(): boolean {
+  try {
+    return !!(localStorage.getItem('token') && localStorage.getItem('user'));
+  } catch {
+    return false;
+  }
+}
+
+/** Минимум времени показа лоадера, чтобы анимация не мелькала при быстром ответе */
+const LOADER_MIN_MS = 520;
 
 export default function App() {
   const { token, user } = useAppStore();
   const isAuthenticated = !!token && !!user;
-  const [isAppReady, setIsAppReady] = useState(false);
 
-  useEffect(() => {
-    const t = setTimeout(() => setIsAppReady(true), INITIAL_LOAD_MS);
-    return () => clearTimeout(t);
-  }, []);
+  const [bootstrapComplete, setBootstrapComplete] = useState(() => !hasStoredSession());
 
   // Окрашиваем верхнюю панель Telegram Mini App в цвет фона приложения
   useEffect(() => {
@@ -137,22 +143,45 @@ export default function App() {
     }
   }, []);
 
-  // Pre-warm backend (Render free tier sleeps, first request can take ~50s)
   useEffect(() => {
-    if (isAuthenticated) {
-      healthApi.ping().catch(() => {});
-    }
+    let cancelled = false;
+
+    const run = async () => {
+      if (!isAuthenticated) {
+        setBootstrapComplete(true);
+        return;
+      }
+
+      setBootstrapComplete(false);
+
+      const minDisplay = new Promise<void>((resolve) => {
+        setTimeout(resolve, LOADER_MIN_MS);
+      });
+
+      try {
+        await Promise.all([bootstrapAppData(), minDisplay]);
+      } finally {
+        if (!cancelled) setBootstrapComplete(true);
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthenticated]);
+
+  const showBlockingLoader = isAuthenticated && !bootstrapComplete;
 
   return (
     <>
       <AnimatePresence mode="wait">
-        {!isAppReady ? (
+        {showBlockingLoader ? (
           <motion.div
             key="loader"
             initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
           >
             <AppLoader />
           </motion.div>
@@ -161,7 +190,7 @@ export default function App() {
             key="app"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.22 }}
             style={{
               flex: 1,
               minHeight: 0,

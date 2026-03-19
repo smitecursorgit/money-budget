@@ -1,0 +1,107 @@
+import {
+  statsApi,
+  transactionsApi,
+  remindersApi,
+  categoriesApi,
+  budgetsApi,
+  settingsApi,
+} from '../api/client.ts';
+import { useAppStore, useTransactionStore } from '../store/index.ts';
+import type { StatsSummary, Reminder, Transaction, User } from '../types/index.ts';
+
+const CACHE_KEY = 'dashboard_cache';
+
+type CachePayload = {
+  summary: StatsSummary;
+  transactions: Transaction[];
+  reminders: Reminder[];
+  total?: number;
+};
+
+function writeDashboardCache(data: CachePayload) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ...data, cachedAt: Date.now() }));
+  } catch {
+    /* ignore */
+  }
+}
+
+function readPrevCache(): (CachePayload & { cachedAt: number }) | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as CachePayload & { cachedAt: number };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Загружает данные для первого экрана (дашборд, стор, кэш) до показа приложения.
+ * Использует allSettled — при частичных ошибках подмешивает кэш / прошлые значения.
+ */
+export async function bootstrapAppData(): Promise<void> {
+  const [catRes, budRes, setRes, sumRes, txRes, remRes] = await Promise.allSettled([
+    categoriesApi.list(),
+    budgetsApi.list(),
+    settingsApi.get(),
+    statsApi.summary(),
+    transactionsApi.list({ limit: 20 }),
+    remindersApi.upcoming(30),
+  ]);
+
+  const { setCategories, setBudgets, setUser, user } = useAppStore.getState();
+  const { setTransactions } = useTransactionStore.getState();
+
+  if (catRes.status === 'fulfilled') {
+    setCategories(catRes.value.data);
+  }
+  if (budRes.status === 'fulfilled') {
+    setBudgets(budRes.value.data);
+  }
+  if (setRes.status === 'fulfilled' && user) {
+    const s = setRes.value.data as Partial<
+      Pick<User, 'currency' | 'timezone' | 'periodStart' | 'firstName' | 'username'>
+    >;
+    setUser({
+      ...user,
+      currency: s.currency ?? user.currency,
+      timezone: s.timezone ?? user.timezone,
+      periodStart: s.periodStart ?? user.periodStart,
+      firstName: s.firstName ?? user.firstName,
+      username: s.username ?? user.username,
+      id: user.id,
+      currentBudgetId: user.currentBudgetId,
+    });
+  }
+
+  const prev = readPrevCache();
+
+  let summary: StatsSummary =
+    prev?.summary ?? ({ income: 0, expense: 0, balance: 0, period: { from: '', to: '' } } as StatsSummary);
+  if (sumRes.status === 'fulfilled') {
+    summary = sumRes.value.data;
+  }
+
+  let safeTransactions = prev?.transactions ?? [];
+  let total = prev?.total ?? 0;
+  if (txRes.status === 'fulfilled') {
+    const newTx: Transaction[] = txRes.value.data.transactions;
+    total = txRes.value.data.total;
+    safeTransactions = newTx.length > 0 || total === 0 ? newTx : safeTransactions;
+  }
+
+  setTransactions(safeTransactions, total);
+
+  let remindersSlice: Reminder[] = prev?.reminders ?? [];
+  if (remRes.status === 'fulfilled') {
+    remindersSlice = remRes.value.data.slice(0, 3);
+  }
+
+  writeDashboardCache({
+    summary,
+    transactions: safeTransactions,
+    reminders: remindersSlice,
+    total,
+  });
+}
