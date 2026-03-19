@@ -1,12 +1,13 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, ArrowLeftRight, BarChart3, Bell, Settings } from 'lucide-react';
+import { LayoutDashboard, ArrowLeftRight, BarChart3, Sparkles, Bell, Settings } from 'lucide-react';
 
 const tabs = [
   { path: '/', icon: LayoutDashboard },
   { path: '/transactions', icon: ArrowLeftRight },
   { path: '/stats', icon: BarChart3 },
+  { path: '/assistant', icon: Sparkles },
   { path: '/reminders', icon: Bell },
   { path: '/settings', icon: Settings },
 ];
@@ -70,7 +71,7 @@ export function BottomNav() {
             )}
             <div style={{ position: 'relative', zIndex: 1 }}>
               <Icon
-                size={22}
+                size={20}
                 color={active ? '#ffffff' : 'rgba(255,255,255,0.28)'}
                 strokeWidth={active ? 2.2 : 1.6}
               />

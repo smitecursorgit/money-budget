@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, ChevronRight, Check } from 'lucide-react';
 import { Card } from '../components/ui/Card.tsx';
 import { Button } from '../components/ui/Button.tsx';
@@ -320,7 +320,6 @@ function BudgetModal({ budget, onClose, onSaved }: { budget: Budget | null; onCl
   const [initialBalance, setInitialBalance] = useState(String(budget ? Number(budget.initialBalance) : 0));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dragControls = useDragControls();
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
@@ -351,16 +350,8 @@ function BudgetModal({ budget, onClose, onSaved }: { budget: Budget | null; onCl
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
-      onClick={onClose}
     >
       <motion.div
-        drag="y"
-        dragControls={dragControls}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={{ top: 0, bottom: 0.5 }}
-        onDragEnd={(_: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
-          if (info.offset.y > 80 || info.velocity.y > 300) onClose();
-        }}
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         exit={{ y: 100 }}
@@ -376,10 +367,7 @@ function BudgetModal({ budget, onClose, onSaved }: { budget: Budget | null; onCl
           overflow: 'hidden',
         }}
       >
-        <div
-          onPointerDown={(e) => dragControls.start(e)}
-          style={{ paddingTop: '10px', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
-        >
+        <div style={{ paddingTop: '10px', flexShrink: 0 }}>
           <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'var(--border)' }} />
         </div>
         <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid var(--divider)' }}>
@@ -524,7 +512,6 @@ function CategoryModal({
   const [keywords, setKeywords] = useState(category?.keywords.join(', ') || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dragControls = useDragControls();
 
   const handleSubmit = async () => {
     if (!name.trim()) return;
@@ -551,16 +538,8 @@ function CategoryModal({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
         style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box' }}
-      onClick={onClose}
     >
       <motion.div
-        drag="y"
-        dragControls={dragControls}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={{ top: 0, bottom: 0.5 }}
-        onDragEnd={(_: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
-          if (info.offset.y > 80 || info.velocity.y > 300) onClose();
-        }}
         initial={{ y: 100 }}
         animate={{ y: 0 }}
         exit={{ y: 100 }}
@@ -578,10 +557,7 @@ function CategoryModal({
           overflow: 'hidden',
         }}
       >
-        <div
-          onPointerDown={(e) => dragControls.start(e)}
-          style={{ paddingTop: '10px', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
-        >
+        <div style={{ paddingTop: '10px', flexShrink: 0 }}>
           <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'var(--border)' }} />
         </div>
         <div style={{ padding: '20px 20px 12px', flexShrink: 0, borderBottom: '1px solid var(--divider)' }}>

@@ -12,8 +12,9 @@ import { Transactions } from './screens/Transactions.tsx';
 import { Statistics } from './screens/Statistics.tsx';
 import { Reminders } from './screens/Reminders.tsx';
 import { Settings } from './screens/Settings.tsx';
+import { Assistant } from './screens/Assistant.tsx';
 
-const TAB_PATHS = ['/', '/transactions', '/stats', '/reminders', '/settings'] as const;
+const TAB_PATHS = ['/', '/transactions', '/stats', '/assistant', '/reminders', '/settings'] as const;
 
 function AppShell() {
   const location = useLocation();
@@ -69,6 +70,17 @@ function AppShell() {
               }}
             >
               <Statistics />
+            </div>
+          )}
+          {mountedPaths.includes('/assistant') && (
+            <div
+              style={{
+                display: isActive('/assistant') ? 'block' : 'none',
+                height: '100%',
+                overflow: 'auto',
+              }}
+            >
+              <Assistant />
             </div>
           )}
           {mountedPaths.includes('/reminders') && (

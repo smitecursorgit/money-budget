@@ -1,6 +1,6 @@
 import React, { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, TrendingDown, ChevronRight, RefreshCw, Plus, X, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
@@ -661,7 +661,6 @@ function BalanceEditModal({
 }) {
   const [val, setVal] = useState(String(Number(budget.initialBalance)));
   const [saving, setSaving] = useState(false);
-  const dragControls = useDragControls();
 
   const handleSave = async () => {
     const n = parseFloat(val.replace(/\s/g, '')) || 0;
@@ -671,10 +670,6 @@ function BalanceEditModal({
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleDragEnd = (_: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
-    if (info.offset.y > 80 || info.velocity.y > 300) onClose();
   };
 
   return (
@@ -693,14 +688,8 @@ function BalanceEditModal({
         alignItems: 'flex-end',
         padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))',
       }}
-      onClick={onClose}
     >
       <motion.div
-        drag="y"
-        dragControls={dragControls}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={{ top: 0, bottom: 0.5 }}
-        onDragEnd={handleDragEnd}
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
@@ -714,10 +703,7 @@ function BalanceEditModal({
           borderRadius: 'var(--radius-panel)',
         }}
       >
-        <div
-          onPointerDown={(e) => dragControls.start(e)}
-          style={{ display: 'flex', justifyContent: 'center', paddingBottom: '12px', cursor: 'grab', touchAction: 'none' }}
-        >
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '10px', paddingBottom: '12px' }}>
           <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
         </div>
         <h3 style={{ fontWeight: 700, fontSize: '18px', marginBottom: '12px' }}>Начальный баланс</h3>
@@ -793,11 +779,6 @@ function TransactionDetailModal({
   const icon = t.category?.icon || '📦';
   const color = t.category?.color || '#71717a';
   const isIncome = t.type === 'income';
-  const dragControls = useDragControls();
-
-  const handleDragEnd = (_: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
-    if (info.offset.y > 80 || info.velocity.y > 300) onClose();
-  };
 
   return (
     <AnimatePresence>
@@ -805,7 +786,6 @@ function TransactionDetailModal({
         initial={{ opacity: 1 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 1 }}
-        onClick={onClose}
         style={{
           position: 'fixed',
           inset: 0,
@@ -820,17 +800,11 @@ function TransactionDetailModal({
         }}
       >
         <motion.div
-          drag="y"
-          dragControls={dragControls}
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={{ top: 0, bottom: 0.5 }}
-          onDragEnd={handleDragEnd}
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => dragControls.start(e)}
           style={{
             width: '100%',
             maxHeight: '60vh',
@@ -843,11 +817,12 @@ function TransactionDetailModal({
             borderRadius: 'var(--radius-panel)',
             overflow: 'hidden',
             boxShadow: '0 16px 48px rgba(0,0,0,0.50), 0 2px 0 rgba(255,255,255,0.04) inset',
-            cursor: 'grab',
-            touchAction: 'none',
           }}
         >
-          <div style={{ paddingTop: '16px', flexShrink: 0, borderBottom: '1px solid var(--divider)' }}>
+          <div style={{ paddingTop: '10px', flexShrink: 0 }}>
+            <div style={{ width: 36, height: 4, margin: '0 auto 8px', borderRadius: 2, background: 'rgba(255,255,255,0.2)' }} />
+          </div>
+          <div style={{ paddingTop: '6px', flexShrink: 0, borderBottom: '1px solid var(--divider)' }}>
             <h3 style={{ fontWeight: 700, fontSize: '18px', padding: '12px 20px' }}>Операция</h3>
           </div>
 

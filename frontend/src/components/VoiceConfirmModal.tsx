@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, Trash2, Pencil, TrendingUp, TrendingDown, Bell } from 'lucide-react';
 import { ParsedEntry, Category } from '../types/index.ts';
 import { Button } from './ui/Button.tsx';
@@ -29,7 +29,6 @@ export function VoiceConfirmModal({
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const dragControls = useDragControls();
 
   const updateEntry = (index: number, updated: ParsedEntry) => {
     setEntries((prev) => prev.map((e, i) => (i === index ? updated : e)));
@@ -74,16 +73,8 @@ export function VoiceConfirmModal({
           background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
           zIndex: 200, display: 'flex', alignItems: 'flex-end', padding: '0 12px calc(12px + var(--nav-height) + var(--safe-bottom))', boxSizing: 'border-box',
         }}
-        onClick={onClose}
       >
         <motion.div
-          drag="y"
-          dragControls={dragControls}
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={{ top: 0, bottom: 0.5 }}
-          onDragEnd={(_: unknown, info: { offset: { y: number }; velocity: { y: number } }) => {
-            if (info.offset.y > 80 || info.velocity.y > 300) onClose();
-          }}
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
@@ -100,11 +91,7 @@ export function VoiceConfirmModal({
             boxShadow: '0 16px 48px rgba(0,0,0,0.50), 0 2px 0 rgba(255,255,255,0.04) inset',
           }}
         >
-          {/* Header — drag handle */}
-          <div
-            onPointerDown={(e) => dragControls.start(e)}
-            style={{ paddingTop: '10px', flexShrink: 0, cursor: 'grab', touchAction: 'none' }}
-          >
+          <div style={{ paddingTop: '10px', flexShrink: 0 }}>
             <div style={{ width: 36, height: 4, margin: '0 auto 12px', borderRadius: 2, background: 'rgba(255,255,255,0.25)' }} />
           </div>
           <div style={{ padding: '18px 20px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
