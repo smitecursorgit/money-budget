@@ -13,6 +13,7 @@ import { Statistics } from './screens/Statistics.tsx';
 import { Reminders } from './screens/Reminders.tsx';
 import { Settings } from './screens/Settings.tsx';
 import { Assistant } from './screens/Assistant.tsx';
+import { Paywall } from './components/Paywall.tsx';
 
 const TAB_PATHS = ['/', '/transactions', '/stats', '/assistant', '/reminders', '/settings'] as const;
 
@@ -129,6 +130,7 @@ const LOADER_MIN_MS = 520;
 export default function App() {
   const { token, user } = useAppStore();
   const isAuthenticated = !!token && !!user;
+  const paywallActive = isAuthenticated && user?.hasSubscriptionAccess === false;
 
   const [bootstrapComplete, setBootstrapComplete] = useState(() => !hasStoredSession());
 
@@ -200,7 +202,7 @@ export default function App() {
             }}
           >
             <BrowserRouter>
-              {isAuthenticated ? <AppShell /> : <AuthScreen />}
+              {isAuthenticated ? paywallActive ? <Paywall /> : <AppShell /> : <AuthScreen />}
             </BrowserRouter>
           </motion.div>
         )}

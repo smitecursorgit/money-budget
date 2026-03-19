@@ -8,7 +8,7 @@ export interface TelegramUser {
 
 export interface AuthPayload {
   userId: string;
-  telegramId: number;
+  telegramId: string;
 }
 
 export interface ParsedEntry {

@@ -137,3 +137,15 @@ export const budgetsApi = {
   select: (id: string) => api.post(`/budgets/${id}/select`),
   remove: (id: string) => api.delete(`/budgets/${id}`),
 };
+
+export type SubscriptionStatus = {
+  trialStart: string;
+  subscriptionEndsAt: string | null;
+  hasSubscriptionAccess: boolean;
+};
+
+export const subscriptionApi = {
+  status: () => api.get<SubscriptionStatus>('/subscription/status'),
+  createPayment: () =>
+    api.post<{ confirmationUrl: string; paymentId: string }>('/subscription/payment'),
+};

@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
+import { subscriptionMiddleware } from '../middleware/subscription';
 import { prisma, withRetry } from '../lib/prisma';
 import { getBudgetId } from '../lib/budget';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(subscriptionMiddleware);
 
 const validDate = z.string().refine((s) => !isNaN(new Date(s).getTime()), { message: 'Invalid date' });
 

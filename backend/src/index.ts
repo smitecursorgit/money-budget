@@ -33,6 +33,8 @@ import categoriesRouter from './routes/categories';
 import statsRouter from './routes/stats';
 import remindersRouter from './routes/reminders';
 import settingsRouter from './routes/settings';
+import subscriptionRouter from './routes/subscription';
+import yookassaWebhooksRouter from './routes/webhooksYookassa';
 import { initBot, getBot } from './bot';
 import { startCronJobs } from './services/cron';
 import { prisma } from './lib/prisma';
@@ -40,6 +42,10 @@ import { Prisma } from '@prisma/client';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3001');
+
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
 
 const ALLOWED_ORIGINS = new Set(
   [
@@ -125,6 +131,9 @@ app.use('/categories', categoriesRouter);
 app.use('/stats', statsRouter);
 app.use('/reminders', remindersRouter);
 app.use('/settings', settingsRouter);
+app.use('/subscription', subscriptionRouter);
+app.use('/webhooks/yookassa', yookassaWebhooksRouter);
+app.use('/api/webhooks/yookassa', yookassaWebhooksRouter);
 
 // Telegram webhook endpoint (used in production instead of polling)
 app.post('/webhook/telegram', express.json(), (req, res) => {

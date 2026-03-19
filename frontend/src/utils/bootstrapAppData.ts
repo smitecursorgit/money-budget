@@ -5,6 +5,7 @@ import {
   categoriesApi,
   budgetsApi,
   settingsApi,
+  subscriptionApi,
 } from '../api/client.ts';
 import { useAppStore, useTransactionStore } from '../store/index.ts';
 import type { StatsSummary, Reminder, Transaction, User } from '../types/index.ts';
@@ -41,6 +42,24 @@ function readPrevCache(): (CachePayload & { cachedAt: number }) | null {
  * Использует allSettled — при частичных ошибках подмешивает кэш / прошлые значения.
  */
 export async function bootstrapAppData(): Promise<void> {
+  const { setUser, user } = useAppStore.getState();
+  try {
+    const { data: sub } = await subscriptionApi.status();
+    if (user) {
+      setUser({
+        ...user,
+        trialStart: sub.trialStart,
+        subscriptionEndsAt: sub.subscriptionEndsAt,
+        hasSubscriptionAccess: sub.hasSubscriptionAccess,
+      });
+    }
+    if (sub.hasSubscriptionAccess === false) {
+      return;
+    }
+  } catch {
+    /* сеть / 401 обработает интерсептор */
+  }
+
   const [catRes, budRes, setRes, sumRes, txRes, remRes] = await Promise.allSettled([
     categoriesApi.list(),
     budgetsApi.list(),
@@ -50,7 +69,7 @@ export async function bootstrapAppData(): Promise<void> {
     remindersApi.upcoming(30),
   ]);
 
-  const { setCategories, setBudgets, setUser, user } = useAppStore.getState();
+  const { setCategories, setBudgets, setUser: mergeUser, user: currentUser } = useAppStore.getState();
   const { setTransactions } = useTransactionStore.getState();
 
   if (catRes.status === 'fulfilled') {
@@ -59,19 +78,19 @@ export async function bootstrapAppData(): Promise<void> {
   if (budRes.status === 'fulfilled') {
     setBudgets(budRes.value.data);
   }
-  if (setRes.status === 'fulfilled' && user) {
+  if (setRes.status === 'fulfilled' && currentUser) {
     const s = setRes.value.data as Partial<
       Pick<User, 'currency' | 'timezone' | 'periodStart' | 'firstName' | 'username'>
     >;
-    setUser({
-      ...user,
-      currency: s.currency ?? user.currency,
-      timezone: s.timezone ?? user.timezone,
-      periodStart: s.periodStart ?? user.periodStart,
-      firstName: s.firstName ?? user.firstName,
-      username: s.username ?? user.username,
-      id: user.id,
-      currentBudgetId: user.currentBudgetId,
+    mergeUser({
+      ...currentUser,
+      currency: s.currency ?? currentUser.currency,
+      timezone: s.timezone ?? currentUser.timezone,
+      periodStart: s.periodStart ?? currentUser.periodStart,
+      firstName: s.firstName ?? currentUser.firstName,
+      username: s.username ?? currentUser.username,
+      id: currentUser.id,
+      currentBudgetId: currentUser.currentBudgetId,
     });
   }
 

@@ -11,26 +11,40 @@ datasource db {
 }
 
 model User {
-  id              String    @id @default(cuid())
-  telegramId      BigInt    @unique @map("telegram_id")
-  username        String?
-  firstName       String?   @map("first_name")
-  lastName        String?   @map("last_name")
-  currency        String    @default("RUB")
-  timezone        String    @default("Europe/Moscow")
-  periodStart     Int       @default(1) @map("period_start")
-  currentBudgetId String?   @map("current_budget_id")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id                 String    @id @default(cuid())
+  telegramId         BigInt    @unique @map("telegram_id")
+  username           String?
+  firstName          String?   @map("first_name")
+  lastName           String?   @map("last_name")
+  currency           String    @default("RUB")
+  timezone           String    @default("Europe/Moscow")
+  periodStart        Int       @default(1) @map("period_start")
+  currentBudgetId    String?   @map("current_budget_id")
+  trialStart         DateTime? @map("trial_start")
+  subscriptionEndsAt DateTime? @map("subscription_ends_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
   currentBudget   Budget?   @relation("UserCurrentBudget", fields: [currentBudgetId], references: [id], onDelete: SetNull)
   budgets         Budget[]  @relation("UserBudgets")
 
-  categories   Category[]
-  transactions Transaction[]
-  reminders    Reminder[]
+  categories                 Category[]
+  transactions               Transaction[]
+  reminders                  Reminder[]
+  yookassaProcessedPayments  YookassaProcessedPayment[]
 
   @@map("users")
+}
+
+model YookassaProcessedPayment {
+  paymentId String   @id @map("payment_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("yookassa_processed_payments")
 }
 
 model Budget {

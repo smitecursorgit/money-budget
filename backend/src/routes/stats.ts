@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth';
+import { subscriptionMiddleware } from '../middleware/subscription';
 import { prisma, withRetry } from '../lib/prisma';
 import { getBudgetId } from '../lib/budget';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(subscriptionMiddleware);
 
 function parseDate(value: unknown): Date | null {
   if (!value || typeof value !== 'string') return null;

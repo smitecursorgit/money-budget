@@ -1,10 +1,13 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
-import { prisma, withRetry } from '../lib/prisma';
+import { subscriptionMiddleware } from '../middleware/subscription';
+import { prisma } from '../lib/prisma';
+import { subscriptionUserJson } from '../lib/subscription';
 
 const router = Router();
 router.use(authMiddleware);
+router.use(subscriptionMiddleware);
 
 const SettingsSchema = z.object({
   currency: z.string().length(3).optional(),
@@ -17,9 +20,26 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     const userId = req.user!.userId;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { currency: true, timezone: true, periodStart: true, firstName: true, username: true },
+      select: {
+        currency: true,
+        timezone: true,
+        periodStart: true,
+        firstName: true,
+        username: true,
+        trialStart: true,
+        subscriptionEndsAt: true,
+        createdAt: true,
+      },
     });
-    res.json(user);
+    if (!user) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    const { trialStart, subscriptionEndsAt, createdAt, ...rest } = user;
+    res.json({
+      ...rest,
+      ...subscriptionUserJson({ trialStart, subscriptionEndsAt, createdAt }),
+    });
   } catch (err) {
     console.error('Settings get error:', err);
     res.status(500).json({ error: 'Не удалось загрузить настройки' });

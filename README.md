@@ -55,6 +55,13 @@ PORT=3001
 NODE_ENV=development
 ```
 
+### Подписка (ЮKassa)
+
+- Триал **72 часа** с момента первого создания пользователя (`trial_start` / `created_at`).
+- После триала без активной подписки показывается Paywall; API (кроме `/auth`, `/subscription/*`, `/health`, вебхука) отвечает **403**.
+- В личном кабинете ЮKassa укажи URL вебхука: `https://<BACKEND>/webhooks/yookassa` или `https://<BACKEND>/api/webhooks/yookassa` (оба пути ведут на один обработчик).
+- Переменные: `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`, опционально `YOOKASSA_RETURN_URL` (редирект после оплаты).
+
 ## Структура проекта
 
 ```
