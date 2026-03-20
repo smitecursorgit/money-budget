@@ -23,6 +23,10 @@ model User {
   trialStart         DateTime? @map("trial_start")
   subscriptionEndsAt DateTime? @map("subscription_ends_at")
   subscriptionExempt Boolean   @default(false) @map("subscription_exempt")
+  firstBotStartAt    DateTime? @map("first_bot_start_at")
+  lastBotAt          DateTime? @map("last_bot_at")
+  firstAppOpenAt     DateTime? @map("first_app_open_at")
+  lastSeenAt         DateTime? @map("last_seen_at")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 

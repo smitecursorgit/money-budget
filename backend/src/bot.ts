@@ -5,6 +5,7 @@ import {
   getAdminTelegramIds,
   ensureAdminCommandsForPrivateChat,
 } from './bot/adminSubscription';
+import { upsertUserFromBotStart, handleStatCommand } from './bot/botStats';
 
 let bot: TelegramBot | null = null;
 
@@ -53,6 +54,7 @@ export function initBot(): TelegramBot | null {
   bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     const fromId = msg.from?.id;
+    void upsertUserFromBotStart(msg);
     if (fromId != null) {
       void ensureAdminCommandsForPrivateChat(bot!, fromId);
     }
@@ -89,6 +91,10 @@ export function initBot(): TelegramBot | null {
 
   bot.onText(/^\/admins(?:@\w+)?(\s|$)/i, (msg) => {
     void handleAdminsSubscriptionCommand(bot!, msg);
+  });
+
+  bot.onText(/^\/stat(?:@\w+)?(\s|$)/i, (msg) => {
+    void handleStatCommand(bot!, msg);
   });
 
   void syncAdminBotCommands(bot).catch((err) =>

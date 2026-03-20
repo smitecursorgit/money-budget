@@ -68,19 +68,27 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    const tgBig = BigInt(tgUser.id);
+    const existing = await prisma.user.findUnique({ where: { telegramId: tgBig } });
+    const now = new Date();
+
     const user = await prisma.user.upsert({
-      where: { telegramId: BigInt(tgUser.id) },
+      where: { telegramId: tgBig },
       update: {
         firstName: tgUser.first_name,
         lastName: tgUser.last_name,
         username: tgUser.username,
+        lastSeenAt: now,
+        ...(existing?.firstAppOpenAt == null ? { firstAppOpenAt: now } : {}),
       },
       create: {
-        telegramId: BigInt(tgUser.id),
+        telegramId: tgBig,
         firstName: tgUser.first_name,
         lastName: tgUser.last_name,
         username: tgUser.username,
-        trialStart: new Date(),
+        trialStart: now,
+        firstAppOpenAt: now,
+        lastSeenAt: now,
       },
     });
 

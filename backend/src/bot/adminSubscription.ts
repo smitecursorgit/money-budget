@@ -1,24 +1,33 @@
 import type TelegramBot from 'node-telegram-bot-api';
 import { prisma } from '../lib/prisma';
+import { STAT_COMMAND, STAT_OWNER_TELEGRAM_ID } from './botStats';
 
 const DEFAULT_COMMANDS = [
   { command: 'start', description: 'Открыть приложение' },
   { command: 'help', description: 'Как пользоваться' },
 ] as const;
 
-export const ADMIN_COMMANDS = [
-  ...DEFAULT_COMMANDS,
-  { command: 'admins', description: 'Выдать/забрать доступ по @username' },
-] as const;
+/** Команды для конкретного chat_id (личка): /stat у владельца, /admins у админов. */
+export function buildCommandsForChat(telegramUserId: number): { command: string; description: string }[] {
+  const cmds: { command: string; description: string }[] = [...DEFAULT_COMMANDS];
+  if (telegramUserId === STAT_OWNER_TELEGRAM_ID) {
+    cmds.push(STAT_COMMAND);
+  }
+  if (isTelegramAdmin(telegramUserId)) {
+    cmds.push({ command: 'admins', description: 'Выдать/забрать доступ по @username' });
+  }
+  return cmds;
+}
 
 /** Вызывать из /start — чтобы меню с /admins появилось без перезапуска сервера. */
 export async function ensureAdminCommandsForPrivateChat(
   bot: TelegramBot,
   telegramUserId: number
 ): Promise<void> {
-  if (!isTelegramAdmin(telegramUserId)) return;
+  const cmds = buildCommandsForChat(telegramUserId);
+  if (cmds.length === DEFAULT_COMMANDS.length) return;
   try {
-    await bot.setMyCommands([...ADMIN_COMMANDS], {
+    await bot.setMyCommands(cmds, {
       scope: { type: 'chat', chat_id: telegramUserId },
     });
   } catch {
@@ -47,19 +56,22 @@ export async function syncAdminBotCommands(bot: TelegramBot): Promise<void> {
 
   await bot.setMyCommands([...DEFAULT_COMMANDS], { scope: { type: 'default' } });
 
-  for (const chatId of adminIds) {
+  const chatIdsWithExtra = new Set<number>([...adminIds, STAT_OWNER_TELEGRAM_ID]);
+  for (const chatId of chatIdsWithExtra) {
     try {
-      await bot.setMyCommands([...ADMIN_COMMANDS], {
+      await bot.setMyCommands(buildCommandsForChat(chatId), {
         scope: { type: 'chat', chat_id: chatId },
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      console.warn(`[bot] setMyCommands for admin chat ${chatId}: ${msg}`);
+      console.warn(`[bot] setMyCommands for chat ${chatId}: ${msg}`);
     }
   }
 
-  if (adminIds.length > 0) {
-    console.log(`[bot] /admins registered for ${adminIds.length} admin chat(s); default menu without /admins`);
+  if (chatIdsWithExtra.size > 0) {
+    console.log(
+      `[bot] extra commands for ${chatIdsWithExtra.size} chat(s) (/stat owner, /admins for admins)`
+    );
   }
 }
 
