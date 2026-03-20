@@ -19,14 +19,11 @@ const EXAMPLE_QUESTIONS = [
 export function Assistant() {
   return (
     <div
-      className="page"
+      className="page-scroll"
       style={{
-        paddingLeft: 16,
-        paddingRight: 16,
-        paddingBottom: 'calc(24px + var(--nav-height) + var(--safe-bottom))',
-        minHeight: '100%',
         display: 'flex',
         flexDirection: 'column',
+        gap: 0,
       }}
     >
       <motion.div {...fadeUp} style={{ paddingTop: '24px', paddingBottom: '8px' }}>
@@ -57,7 +54,7 @@ export function Assistant() {
       <motion.div
         {...fadeUp}
         transition={{ delay: 0.05, ...fadeUp.transition }}
-        style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px', minHeight: 0 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
       >
         <Card padding="lg" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-accent)' }}>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: '14px' }}>
@@ -102,88 +99,90 @@ export function Assistant() {
           </div>
         </Card>
 
-        <p className="section-title" style={{ padding: '0 4px', marginTop: '4px' }}>
+        <p className="section-title" style={{ padding: '0 4px', marginTop: '8px' }}>
           Чат
         </p>
-        <Card
-          padding="md"
-          style={{
-            flex: 1,
-            minHeight: 120,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            border: '1px dashed var(--border)',
-            background: 'rgba(255,255,255,0.02)',
-          }}
-        >
-          <p style={{ fontSize: '15px', color: 'var(--text-tertiary)', lineHeight: 1.5, maxWidth: 280 }}>
-            Подключим нейросеть чуть позже — тогда здесь появится переписка.
-          </p>
-        </Card>
-      </motion.div>
 
-      <motion.div
-        {...fadeUp}
-        transition={{ delay: 0.12, ...fadeUp.transition }}
-        style={{
-          position: 'sticky',
-          bottom: 0,
-          marginTop: 'auto',
-          paddingTop: '12px',
-          background: 'linear-gradient(180deg, transparent 0%, var(--bg-base) 28%)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '10px 14px',
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-panel)',
-            opacity: 0.72,
-          }}
+        <motion.div
+          {...fadeUp}
+          transition={{ delay: 0.1, ...fadeUp.transition }}
+          style={{ marginTop: '2px' }}
         >
-          <input
-            type="text"
-            readOnly
-            placeholder="Напишите вопрос помощнику…"
+          <Card
+            padding="lg"
             style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-tertiary)',
-              fontSize: '15px',
-              outline: 'none',
-            }}
-          />
-          <button
-            type="button"
-            disabled
-            aria-label="Отправить (скоро)"
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: '14px',
-              border: 'none',
-              background: 'rgba(255,255,255,0.08)',
-              color: 'var(--text-tertiary)',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'not-allowed',
+              flexDirection: 'column',
+              gap: '14px',
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-accent)',
             }}
           >
-            <Send size={20} />
-          </button>
-        </div>
-        <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', textAlign: 'center', marginTop: '8px' }}>
-          Скоро можно будет отправлять сообщения
-        </p>
+            <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', lineHeight: 1.5, margin: 0 }}>
+              Подключим нейросеть чуть позже — здесь появится переписка с помощником.
+            </p>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 14px',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'calc(var(--radius-panel) - 4px)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+              }}
+            >
+              <input
+                type="text"
+                readOnly
+                placeholder="Напишите вопрос помощнику…"
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  fontSize: '15px',
+                  outline: 'none',
+                }}
+              />
+              <button
+                type="button"
+                disabled
+                aria-label="Отправить (скоро)"
+                style={{
+                  flexShrink: 0,
+                  width: 44,
+                  height: 44,
+                  borderRadius: '14px',
+                  border: 'none',
+                  background: 'rgba(255,255,255,0.08)',
+                  color: 'var(--text-tertiary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'not-allowed',
+                }}
+              >
+                <Send size={20} />
+              </button>
+            </div>
+
+            <p
+              style={{
+                fontSize: '11px',
+                color: 'var(--text-tertiary)',
+                textAlign: 'center',
+                margin: 0,
+                opacity: 0.9,
+              }}
+            >
+              Скоро можно будет отправлять сообщения
+            </p>
+          </Card>
+        </motion.div>
       </motion.div>
     </div>
   );

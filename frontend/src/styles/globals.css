@@ -125,6 +125,23 @@ body {
 }
 .page::-webkit-scrollbar { display: none; }
 
+/**
+ * Экран внутри вкладки App (родитель уже height:100% + overflow:auto).
+ * Без position:absolute — иначе flex:1/min-height:0 обрезают контент и скролл «не доезжает» до низа.
+ */
+.page-scroll {
+  min-height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  padding-left: var(--page-x);
+  padding-right: var(--page-x);
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 20px);
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
+}
+
 /* Card — semi-transparent with subtle shadow */
 .glass-card {
   background: var(--bg-surface);
