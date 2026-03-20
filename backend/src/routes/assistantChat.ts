@@ -4,6 +4,7 @@ import { authMiddleware } from '../middleware/auth';
 import { subscriptionMiddleware } from '../middleware/subscription';
 import { prisma } from '../lib/prisma';
 import { assistantFinanceChat } from '../services/ai';
+import { buildAssistantFinanceContext } from '../services/assistantContext';
 
 const router = Router();
 router.use(authMiddleware);
@@ -34,13 +35,17 @@ router.post('/chat', async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
+    const userId = req.user!.userId;
     const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
+      where: { id: userId },
       select: { currency: true },
     });
 
+    const userContext = await buildAssistantFinanceContext(userId);
+
     const reply = await assistantFinanceChat(parse.data.messages, {
       currency: user?.currency ?? 'RUB',
+      userContext,
     });
     res.json({ reply });
   } catch (e) {
