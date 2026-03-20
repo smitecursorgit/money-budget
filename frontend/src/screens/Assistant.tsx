@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Sparkles, Send } from 'lucide-react';
 import { Card } from '../components/ui/Card.tsx';
 import { assistantApi, type ChatMessage } from '../api/client.ts';
@@ -24,11 +24,13 @@ export function Assistant() {
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const hasUserMessage = messages.some((m) => m.role === 'user');
+
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages, loading]);
+  }, [messages, loading, hasUserMessage]);
 
   const send = useCallback(
     async (raw: string) => {
@@ -83,7 +85,7 @@ export function Assistant() {
           <div>
             <h1 style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.02em' }}>Помощник</h1>
             <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-              Анализ финансов и советы (Groq / Llama)
+              Анализ финансов и советы
             </p>
           </div>
         </div>
@@ -94,60 +96,7 @@ export function Assistant() {
         transition={{ delay: 0.05, ...fadeUp.transition }}
         style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
       >
-        <Card padding="lg" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-accent)' }}>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: '14px' }}>
-            Спросите о бюджете, тратах и привычках — ответит языковая модель. Конкретные суммы из приложения в чат не
-            подставляются: для точных цифр смотрите статистику и операции.
-          </p>
-          <p
-            style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              color: 'var(--text-tertiary)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              marginBottom: '10px',
-            }}
-          >
-            Примеры вопросов
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {EXAMPLE_QUESTIONS.map((q, i) => (
-              <motion.button
-                key={q}
-                type="button"
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.08 + i * 0.05, type: 'spring', stiffness: 300, damping: 26 }}
-                onClick={() => void send(q)}
-                disabled={loading}
-                style={{
-                  padding: '12px 14px',
-                  borderRadius: 'var(--radius-panel)',
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border)',
-                  fontSize: '14px',
-                  color: 'var(--text-secondary)',
-                  lineHeight: 1.4,
-                  textAlign: 'left',
-                  cursor: loading ? 'wait' : 'pointer',
-                }}
-              >
-                «{q}»
-              </motion.button>
-            ))}
-          </div>
-        </Card>
-
-        <p className="section-title" style={{ padding: '0 4px', marginTop: '8px' }}>
-          Чат
-        </p>
-
-        <motion.div
-          {...fadeUp}
-          transition={{ delay: 0.1, ...fadeUp.transition }}
-          style={{ marginTop: '2px' }}
-        >
+        <motion.div {...fadeUp} transition={{ delay: 0.08, ...fadeUp.transition }}>
           <Card
             padding="lg"
             style={{
@@ -161,8 +110,8 @@ export function Assistant() {
             <div
               ref={scrollRef}
               style={{
-                maxHeight: 'min(48vh, 380px)',
-                minHeight: messages.length ? 120 : 0,
+                maxHeight: 'min(56vh, 480px)',
+                minHeight: hasUserMessage ? 120 : 'min(40vh, 320px)',
                 overflowY: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
@@ -170,11 +119,78 @@ export function Assistant() {
                 paddingRight: 4,
               }}
             >
-              {messages.length === 0 && !loading && (
-                <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', lineHeight: 1.5, margin: 0 }}>
-                  Напишите сообщение ниже или нажмите пример выше.
-                </p>
-              )}
+              <AnimatePresence initial={false}>
+                {!hasUserMessage && (
+                  <motion.div
+                    key="chat-onboarding"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexShrink: 0 }}
+                  >
+                    <div
+                      style={{
+                        alignSelf: 'flex-start',
+                        maxWidth: '100%',
+                        padding: '12px 14px',
+                        borderRadius: '16px',
+                        fontSize: '14px',
+                        lineHeight: 1.5,
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      Спросите о бюджете, тратах и привычках — ответит языковая модель. Конкретные суммы из приложения в
+                      чат не подставляются: для точных цифр смотрите статистику и операции.
+                    </div>
+                    <p
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: 'var(--text-tertiary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        margin: '2px 0 0',
+                      }}
+                    >
+                      Примеры вопросов
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {EXAMPLE_QUESTIONS.map((q, i) => (
+                        <motion.button
+                          key={q}
+                          type="button"
+                          initial={{ opacity: 0, x: -6 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.04 + i * 0.04, type: 'spring', stiffness: 320, damping: 28 }}
+                          onClick={() => void send(q)}
+                          disabled={loading}
+                          style={{
+                            alignSelf: 'flex-start',
+                            maxWidth: '100%',
+                            padding: '10px 14px',
+                            borderRadius: '999px',
+                            background: 'rgba(102, 187, 106, 0.08)',
+                            border: '1px solid rgba(102, 187, 106, 0.22)',
+                            fontSize: '14px',
+                            color: 'var(--text-secondary)',
+                            lineHeight: 1.4,
+                            textAlign: 'left',
+                            cursor: loading ? 'wait' : 'pointer',
+                          }}
+                        >
+                          «{q}»
+                        </motion.button>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', lineHeight: 1.5, margin: '4px 0 0' }}>
+                      Напишите вопрос в поле ниже.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               {messages.map((m, idx) => (
                 <div
                   key={`${idx}-${m.role}-${m.content.slice(0, 24)}`}
