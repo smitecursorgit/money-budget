@@ -14,6 +14,8 @@ import { Reminders } from './screens/Reminders.tsx';
 import { Settings } from './screens/Settings.tsx';
 import { Assistant } from './screens/Assistant.tsx';
 import { Paywall } from './components/Paywall.tsx';
+import { WelcomeScreen } from './screens/WelcomeScreen.tsx';
+import { isWelcomeSeen, markWelcomeSeen } from './utils/welcomeSeen.ts';
 
 const TAB_PATHS = ['/', '/transactions', '/stats', '/assistant', '/reminders', '/settings'] as const;
 
@@ -133,6 +135,12 @@ export default function App() {
   const paywallActive = isAuthenticated && user?.hasSubscriptionAccess === false;
 
   const [bootstrapComplete, setBootstrapComplete] = useState(() => !hasStoredSession());
+  const [welcomeComplete, setWelcomeComplete] = useState(() => isWelcomeSeen());
+
+  const dismissWelcome = () => {
+    markWelcomeSeen();
+    setWelcomeComplete(true);
+  };
 
   // Окрашиваем верхнюю панель Telegram Mini App в цвет фона приложения
   useEffect(() => {
@@ -202,7 +210,15 @@ export default function App() {
             }}
           >
             <BrowserRouter>
-              {isAuthenticated ? paywallActive ? <Paywall /> : <AppShell /> : <AuthScreen />}
+              {!isAuthenticated ? (
+                <AuthScreen />
+              ) : !welcomeComplete ? (
+                <WelcomeScreen onContinue={dismissWelcome} />
+              ) : paywallActive ? (
+                <Paywall />
+              ) : (
+                <AppShell />
+              )}
             </BrowserRouter>
           </motion.div>
         )}
