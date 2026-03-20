@@ -78,9 +78,11 @@ function AppShell() {
           {mountedPaths.includes('/assistant') && (
             <div
               style={{
-                display: isActive('/assistant') ? 'block' : 'none',
+                display: isActive('/assistant') ? 'flex' : 'none',
+                flexDirection: 'column',
                 height: '100%',
-                overflow: 'auto',
+                minHeight: 0,
+                overflow: 'hidden',
               }}
             >
               <Assistant />

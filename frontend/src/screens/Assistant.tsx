@@ -58,16 +58,9 @@ export function Assistant() {
   );
 
   return (
-    <div
-      className="page-scroll"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 0,
-      }}
-    >
-      <motion.div {...fadeUp} style={{ paddingTop: '24px', paddingBottom: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+    <div className="assistant-page">
+      <motion.div {...fadeUp} style={{ flexShrink: 0, paddingBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div
             style={{
               width: 48,
@@ -94,31 +87,35 @@ export function Assistant() {
       <motion.div
         {...fadeUp}
         transition={{ delay: 0.05, ...fadeUp.transition }}
-        style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+        style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
       >
-        <motion.div {...fadeUp} transition={{ delay: 0.08, ...fadeUp.transition }}>
-          <Card
-            padding="lg"
+        <Card
+          padding="lg"
+          style={{
+            flex: 1,
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            overflow: 'hidden',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-accent)',
+          }}
+        >
+          <div
+            ref={scrollRef}
             style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              overscrollBehavior: 'contain',
               display: 'flex',
               flexDirection: 'column',
-              gap: '12px',
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-accent)',
+              gap: '10px',
+              paddingRight: 4,
             }}
           >
-            <div
-              ref={scrollRef}
-              style={{
-                maxHeight: 'min(56vh, 480px)',
-                minHeight: hasUserMessage ? 120 : 'min(40vh, 320px)',
-                overflowY: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-                paddingRight: 4,
-              }}
-            >
               <AnimatePresence initial={false}>
                 {!hasUserMessage && (
                   <motion.div
@@ -229,87 +226,88 @@ export function Assistant() {
                   Печатает…
                 </div>
               )}
-            </div>
+          </div>
 
-            {error ? (
-              <p style={{ fontSize: '12px', color: '#ef5350', margin: 0 }}>{error}</p>
-            ) : null}
+          {error ? (
+            <p style={{ fontSize: '12px', color: '#ef5350', margin: 0, flexShrink: 0 }}>{error}</p>
+          ) : null}
 
-            <form
-              onSubmit={(ev) => {
-                ev.preventDefault();
-                void send(input);
+          <form
+            style={{ flexShrink: 0 }}
+            onSubmit={(ev) => {
+              ev.preventDefault();
+              void send(input);
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 14px',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'calc(var(--radius-panel) - 4px)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
               }}
             >
-              <div
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Напишите вопрос помощнику…"
+                disabled={loading}
+                autoComplete="off"
                 style={{
+                  flex: 1,
+                  minWidth: 0,
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  fontSize: '15px',
+                  outline: 'none',
+                }}
+              />
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                aria-label="Отправить"
+                style={{
+                  flexShrink: 0,
+                  width: 44,
+                  height: 44,
+                  borderRadius: '14px',
+                  border: 'none',
+                  background:
+                    loading || !input.trim()
+                      ? 'rgba(255,255,255,0.06)'
+                      : 'rgba(102, 187, 106, 0.35)',
+                  color: loading || !input.trim() ? 'var(--text-tertiary)' : 'var(--text-primary)',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '10px',
-                  padding: '12px 14px',
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'calc(var(--radius-panel) - 4px)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+                  justifyContent: 'center',
+                  cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
                 }}
               >
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Напишите вопрос помощнику…"
-                  disabled={loading}
-                  autoComplete="off"
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-secondary)',
-                    fontSize: '15px',
-                    outline: 'none',
-                  }}
-                />
-                <button
-                  type="submit"
-                  disabled={loading || !input.trim()}
-                  aria-label="Отправить"
-                  style={{
-                    flexShrink: 0,
-                    width: 44,
-                    height: 44,
-                    borderRadius: '14px',
-                    border: 'none',
-                    background:
-                      loading || !input.trim()
-                        ? 'rgba(255,255,255,0.06)'
-                        : 'rgba(102, 187, 106, 0.35)',
-                    color: loading || !input.trim() ? 'var(--text-tertiary)' : 'var(--text-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: loading || !input.trim() ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  <Send size={20} />
-                </button>
-              </div>
-            </form>
+                <Send size={20} />
+              </button>
+            </div>
+          </form>
 
-            <p
-              style={{
-                fontSize: '11px',
-                color: 'var(--text-tertiary)',
-                textAlign: 'center',
-                margin: 0,
-                opacity: 0.85,
-                lineHeight: 1.4,
-              }}
-            >
-              Ответы носят справочный характер, не являются финансовой или юридической рекомендацией.
-            </p>
-          </Card>
-        </motion.div>
+          <p
+            style={{
+              fontSize: '11px',
+              color: 'var(--text-tertiary)',
+              textAlign: 'center',
+              margin: 0,
+              opacity: 0.85,
+              lineHeight: 1.4,
+              flexShrink: 0,
+            }}
+          >
+            Ответы носят справочный характер, не являются финансовой или юридической рекомендацией.
+          </p>
+        </Card>
       </motion.div>
     </div>
   );

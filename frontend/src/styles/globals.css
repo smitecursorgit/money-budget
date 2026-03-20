@@ -142,6 +142,21 @@ body {
   overscroll-behavior-y: contain;
 }
 
+/** Вкладка «Помощник»: фиксированная высота, без скролла страницы — скролл только у ленты сообщений. */
+.assistant-page {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding-left: var(--page-x);
+  padding-right: var(--page-x);
+  padding-top: 12px;
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* Card — semi-transparent with subtle shadow */
 .glass-card {
   background: var(--bg-surface);
