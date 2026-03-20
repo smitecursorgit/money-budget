@@ -36,6 +36,7 @@ import settingsRouter from './routes/settings';
 import subscriptionRouter from './routes/subscription';
 import yookassaWebhooksRouter from './routes/webhooksYookassa';
 import adminRouter from './routes/admin';
+import assistantChatRouter from './routes/assistantChat';
 import { initBot, getBot } from './bot';
 import { startCronJobs } from './services/cron';
 import { prisma } from './lib/prisma';
@@ -130,6 +131,15 @@ const adminLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const assistantChatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  skip: (req) => skipRateLimit(req),
+  message: { error: 'Слишком много сообщений к помощнику. Подождите минуту.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
@@ -137,6 +147,7 @@ app.use('/admin', adminLimiter, adminRouter);
 app.use('/auth', authLimiter, authRouter);
 app.use('/budgets', budgetsRouter);
 app.use('/voice', voiceLimiter, voiceRouter);
+app.use('/assistant', assistantChatLimiter, assistantChatRouter);
 app.use('/transactions', transactionsRouter);
 app.use('/categories', categoriesRouter);
 app.use('/stats', statsRouter);

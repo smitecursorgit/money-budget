@@ -138,6 +138,13 @@ export const budgetsApi = {
   remove: (id: string) => api.delete(`/budgets/${id}`),
 };
 
+export type ChatMessage = { role: 'user' | 'assistant'; content: string };
+
+export const assistantApi = {
+  chat: (messages: ChatMessage[]) =>
+    api.post<{ reply: string }>('/assistant/chat', { messages }, { timeout: 90000 }),
+};
+
 export type SubscriptionStatus = {
   trialStart: string;
   subscriptionEndsAt: string | null;
