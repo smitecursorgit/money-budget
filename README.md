@@ -1,4 +1,4 @@
-# Money Budget — Telegram Mini App
+# Paylo — Telegram Mini App
 
 Умный трекер доходов и расходов с голосовым вводом на базе AI.
 
@@ -127,7 +127,7 @@ npm run build
 # dist/ загрузи на хостинг (Vercel/Netlify подхватят из git)
 ```
 
-Если фронт на другом хостинге (без прокси), задай в build env: `VITE_API_URL=https://money-budget-q2lk.onrender.com`
+Если фронт на другом хостинге (без прокси), задай в build env: `VITE_API_URL=https://<твой-backend>.onrender.com`
 
 ### Backend → Railway / Render / VPS
 ```bash
@@ -138,6 +138,6 @@ node dist/index.js
 На Render в `render.yaml` уже настроены `prisma migrate deploy` в build и переменные окружения (DATABASE_URL, JWT_SECRET и т.д.).
 
 ### Если баланс и операции не загружаются
-1. **URL бэкенда** — В Render Dashboard → твой сервис → в шапке скопируй URL (например `https://money-budget-backend-xyz.onrender.com`). Обнови `frontend/.env.production` и пересобери фронтенд.
+1. **URL бэкенда** — В Render Dashboard → твой сервис → в шапке скопируй URL (например `https://<имя-сервиса>.onrender.com`). Обнови `frontend/.env.production` и пересобери фронтенд.
 2. **MINI_APP_URL** — В Render Environment задай `MINI_APP_URL` = URL, где размещён Mini App (Vercel/Netlify).
 3. **Сброс сессии** — В приложении нажми «Выйти» (при баннере ошибки), закрой Mini App и открой снова.

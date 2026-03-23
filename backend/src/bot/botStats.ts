@@ -119,7 +119,7 @@ export async function handleStatCommand(bot: TelegramBot, msg: TelegramBot.Messa
     ]);
 
     const intro =
-      `<b>📊 Статистика Money Budget</b>\n\n` +
+      `<b>📊 Статистика Paylo</b>\n\n` +
       `🤖 <b>Запустили бота</b> (/start): <b>${botStarters.length}</b>\n` +
       `📱 <b>Открывали приложение</b>: <b>${appUsers.length}</b>\n` +
       `🔥 <b>Активны за ${ACTIVE_DAYS} дн.</b> (бот или приложение): <b>${activeUsers.length}</b>\n` +

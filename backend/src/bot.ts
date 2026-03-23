@@ -59,7 +59,7 @@ export function initBot(): TelegramBot | null {
       void ensureAdminCommandsForPrivateChat(bot!, fromId);
     }
     bot!
-      .sendMessage(chatId, '👋 Привет! Я — Money Budget.\nВеди учёт доходов и расходов голосом.', {
+      .sendMessage(chatId, '👋 Привет! Я — Paylo.\nВеди учёт доходов и расходов голосом.', {
         reply_markup: {
           inline_keyboard: [
             [
