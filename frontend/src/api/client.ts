@@ -144,16 +144,3 @@ export const assistantApi = {
   chat: (messages: ChatMessage[]) =>
     api.post<{ reply: string }>('/assistant/chat', { messages }, { timeout: 90000 }),
 };
-
-export type SubscriptionStatus = {
-  trialStart: string;
-  subscriptionEndsAt: string | null;
-  subscriptionExempt: boolean;
-  hasSubscriptionAccess: boolean;
-};
-
-export const subscriptionApi = {
-  status: () => api.get<SubscriptionStatus>('/subscription/status'),
-  createPayment: () =>
-    api.post<{ confirmationUrl: string; paymentId: string }>('/subscription/payment'),
-};

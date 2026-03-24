@@ -105,7 +105,7 @@ export function WelcomeScreen({ onContinue }: WelcomeScreenProps) {
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: 1.55, marginBottom: '22px' }}>
             Нижняя панель переключает разделы. Данные сохраняются в вашем аккаунте — с телефона можно вести бюджет в
-            пару касаний или голосом.
+            пару касаний или голосом. Все функции доступны бесплатно.
           </p>
         </motion.div>
 

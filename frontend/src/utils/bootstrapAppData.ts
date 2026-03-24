@@ -5,7 +5,6 @@ import {
   categoriesApi,
   budgetsApi,
   settingsApi,
-  subscriptionApi,
 } from '../api/client.ts';
 import { useAppStore, useTransactionStore } from '../store/index.ts';
 import type { StatsSummary, Reminder, Transaction, User } from '../types/index.ts';
@@ -42,25 +41,6 @@ function readPrevCache(): (CachePayload & { cachedAt: number }) | null {
  * Использует allSettled — при частичных ошибках подмешивает кэш / прошлые значения.
  */
 export async function bootstrapAppData(): Promise<void> {
-  const { setUser, user } = useAppStore.getState();
-  try {
-    const { data: sub } = await subscriptionApi.status();
-    if (user) {
-      setUser({
-        ...user,
-        trialStart: sub.trialStart,
-        subscriptionEndsAt: sub.subscriptionEndsAt,
-        subscriptionExempt: sub.subscriptionExempt,
-        hasSubscriptionAccess: sub.hasSubscriptionAccess,
-      });
-    }
-    if (sub.hasSubscriptionAccess === false) {
-      return;
-    }
-  } catch {
-    /* сеть / 401 обработает интерсептор */
-  }
-
   const [catRes, budRes, setRes, sumRes, txRes, remRes] = await Promise.allSettled([
     categoriesApi.list(),
     budgetsApi.list(),

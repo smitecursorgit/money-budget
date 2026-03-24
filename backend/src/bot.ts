@@ -1,10 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
-import {
-  syncAdminBotCommands,
-  handleAdminsSubscriptionCommand,
-  getAdminTelegramIds,
-  ensureAdminCommandsForPrivateChat,
-} from './bot/adminSubscription';
+import { syncBotCommands, ensureOwnerCommandsForPrivateChat } from './bot/botCommands';
 import { upsertUserFromBotStart, handleStatCommand } from './bot/botStats';
 
 let bot: TelegramBot | null = null;
@@ -56,7 +51,7 @@ export function initBot(): TelegramBot | null {
     const fromId = msg.from?.id;
     void upsertUserFromBotStart(msg);
     if (fromId != null) {
-      void ensureAdminCommandsForPrivateChat(bot!, fromId);
+      void ensureOwnerCommandsForPrivateChat(bot!, fromId);
     }
     bot!
       .sendMessage(chatId, '👋 Привет! Я — Paylo.\nВеди учёт доходов и расходов голосом.', {
@@ -89,22 +84,13 @@ export function initBot(): TelegramBot | null {
       .catch((err) => console.error('Failed to send /help reply:', err.message));
   });
 
-  bot.onText(/^\/admins(?:@\w+)?(\s|$)/i, (msg) => {
-    void handleAdminsSubscriptionCommand(bot!, msg);
-  });
-
   bot.onText(/^\/stat(?:@\w+)?(\s|$)/i, (msg) => {
     void handleStatCommand(bot!, msg);
   });
 
-  void syncAdminBotCommands(bot).catch((err) =>
+  void syncBotCommands(bot).catch((err) =>
     console.error('Failed to sync bot commands:', err instanceof Error ? err.message : err)
   );
-
-  const adminCount = getAdminTelegramIds().length;
-  if (adminCount === 0) {
-    console.warn('ADMIN_TELEGRAM_IDS not set — /admins disabled, use BotFather only for /start and /help');
-  }
 
   console.log(`Telegram bot started (${isProduction ? 'webhook' : 'polling'} mode)`);
   return bot;

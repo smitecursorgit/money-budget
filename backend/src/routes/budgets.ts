@@ -1,14 +1,12 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
-import { subscriptionMiddleware } from '../middleware/subscription';
 import { prisma } from '../lib/prisma';
 import { getBudgetId, invalidateBudgetCache } from '../lib/budget';
 import { seedCategoriesForBudget } from '../lib/defaultCategories';
 
 const router = Router();
 router.use(authMiddleware);
-router.use(subscriptionMiddleware);
 
 const CreateBudgetSchema = z.object({
   name: z.string().min(1).max(80),

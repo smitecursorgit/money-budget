@@ -1,4 +1,4 @@
-const WELCOME_SEEN_KEY = 'money-budget-welcome-seen-v1';
+const WELCOME_SEEN_KEY = 'money-budget-welcome-seen-v2';
 
 export function isWelcomeSeen(): boolean {
   try {

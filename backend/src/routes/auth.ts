@@ -5,7 +5,6 @@ import { prisma, withRetry } from '../lib/prisma';
 import { verifyTelegramInitData } from '../middleware/auth';
 import { migrateUserToBudgets, getBudgetId } from '../lib/budget';
 import { seedCategoriesForBudget } from '../lib/defaultCategories';
-import { subscriptionUserJson } from '../lib/subscription';
 
 const router = Router();
 
@@ -86,7 +85,6 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         firstName: tgUser.first_name,
         lastName: tgUser.last_name,
         username: tgUser.username,
-        trialStart: now,
         firstAppOpenAt: now,
         lastSeenAt: now,
       },
@@ -140,7 +138,6 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
         timezone: user.timezone,
         periodStart: user.periodStart,
         currentBudgetId: budgetId,
-        ...subscriptionUserJson(user),
       },
       budgets,
       categories,

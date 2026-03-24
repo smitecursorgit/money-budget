@@ -64,7 +64,6 @@ export async function upsertUserFromBotStart(msg: TelegramBot.Message): Promise<
         firstName: from.first_name,
         lastName: from.last_name,
         username: from.username,
-        trialStart: new Date(),
         firstBotStartAt: now,
         lastBotAt: now,
       },
@@ -93,7 +92,7 @@ export async function handleStatCommand(bot: TelegramBot, msg: TelegramBot.Messa
   try {
     const since = new Date(Date.now() - ACTIVE_DAYS * 24 * 60 * 60 * 1000);
 
-    const [botStarters, appUsers, activeUsers, buyers] = await Promise.all([
+    const [botStarters, appUsers, activeUsers] = await Promise.all([
       prisma.user.findMany({
         where: { firstBotStartAt: { not: null } },
         select: { telegramId: true, username: true, firstName: true, firstBotStartAt: true },
@@ -111,25 +110,18 @@ export async function handleStatCommand(bot: TelegramBot, msg: TelegramBot.Messa
         select: { telegramId: true, username: true, firstName: true },
         orderBy: { telegramId: 'asc' },
       }),
-      prisma.user.findMany({
-        where: { yookassaProcessedPayments: { some: {} } },
-        select: { telegramId: true, username: true, firstName: true },
-        orderBy: { telegramId: 'asc' },
-      }),
     ]);
 
     const intro =
       `<b>📊 Статистика Paylo</b>\n\n` +
       `🤖 <b>Запустили бота</b> (/start): <b>${botStarters.length}</b>\n` +
       `📱 <b>Открывали приложение</b>: <b>${appUsers.length}</b>\n` +
-      `🔥 <b>Активны за ${ACTIVE_DAYS} дн.</b> (бот или приложение): <b>${activeUsers.length}</b>\n` +
-      `💳 <b>Оплатили подписку</b> (ЮKassa): <b>${buyers.length}</b>`;
+      `🔥 <b>Активны за ${ACTIVE_DAYS} дн.</b> (бот или приложение): <b>${activeUsers.length}</b>`;
 
     const sections = [
       `\n\n🤖 <b>Кто запустил бота</b>\n${botStarters.map(formatUserLine).join('\n') || '—'}`,
       `\n\n📱 <b>Кто открывал приложение</b>\n${appUsers.map(formatUserLine).join('\n') || '—'}`,
       `\n\n🔥 <b>Активные (${ACTIVE_DAYS} дн.)</b>\n${activeUsers.map(formatUserLine).join('\n') || '—'}`,
-      `\n\n💳 <b>Оплатили подписку</b>\n${buyers.map(formatUserLine).join('\n') || '—'}`,
     ];
 
     const fullText = intro + sections.join('');

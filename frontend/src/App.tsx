@@ -13,7 +13,6 @@ import { Statistics } from './screens/Statistics.tsx';
 import { Reminders } from './screens/Reminders.tsx';
 import { Settings } from './screens/Settings.tsx';
 import { Assistant } from './screens/Assistant.tsx';
-import { Paywall } from './components/Paywall.tsx';
 import { WelcomeScreen } from './screens/WelcomeScreen.tsx';
 import { isWelcomeSeen, markWelcomeSeen } from './utils/welcomeSeen.ts';
 
@@ -134,8 +133,6 @@ const LOADER_MIN_MS = 520;
 export default function App() {
   const { token, user } = useAppStore();
   const isAuthenticated = !!token && !!user;
-  const paywallActive = isAuthenticated && user?.hasSubscriptionAccess === false;
-
   const [bootstrapComplete, setBootstrapComplete] = useState(() => !hasStoredSession());
   const [welcomeComplete, setWelcomeComplete] = useState(() => isWelcomeSeen());
 
@@ -216,8 +213,6 @@ export default function App() {
                 <AuthScreen />
               ) : !welcomeComplete ? (
                 <WelcomeScreen onContinue={dismissWelcome} />
-              ) : paywallActive ? (
-                <Paywall />
               ) : (
                 <AppShell />
               )}

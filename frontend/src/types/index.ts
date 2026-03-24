@@ -6,13 +6,6 @@ export interface User {
   timezone: string;
   periodStart: number;
   currentBudgetId?: string;
-  /** ISO — начало триала (сервер: trial_start или created_at) */
-  trialStart?: string;
-  subscriptionEndsAt?: string | null;
-  /** false = показать Paywall (истёк триал и нет оплаченного периода) */
-  hasSubscriptionAccess?: boolean;
-  /** Бессрочный доступ без оплаты (выдан вручную) */
-  subscriptionExempt?: boolean;
 }
 
 export interface Budget {

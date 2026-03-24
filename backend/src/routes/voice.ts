@@ -3,7 +3,6 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { authMiddleware } from '../middleware/auth';
-import { subscriptionMiddleware } from '../middleware/subscription';
 import { transcribeAudio, parseFinanceText } from '../services/ai';
 import { prisma, withRetry } from '../lib/prisma';
 import { getBudgetId } from '../lib/budget';
@@ -67,7 +66,7 @@ const uploadSingle = (req: Request, res: Response, next: import('express').NextF
   });
 };
 
-router.post('/parse', authMiddleware, subscriptionMiddleware, uploadSingle, async (req: Request, res: Response): Promise<void> => {
+router.post('/parse', authMiddleware, uploadSingle, async (req: Request, res: Response): Promise<void> => {
   const userId = req.user!.userId;
 
   if (!req.file) {
@@ -137,7 +136,7 @@ router.post('/parse', authMiddleware, subscriptionMiddleware, uploadSingle, asyn
   }
 });
 
-router.post('/parse-text', authMiddleware, subscriptionMiddleware, async (req: Request, res: Response): Promise<void> => {
+router.post('/parse-text', authMiddleware, async (req: Request, res: Response): Promise<void> => {
   const userId = req.user!.userId;
   const { text } = req.body;
 

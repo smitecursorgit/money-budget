@@ -19,11 +19,8 @@ model User {
   currency           String    @default("RUB")
   timezone           String    @default("Europe/Moscow")
   periodStart        Int       @default(1) @map("period_start")
-  currentBudgetId    String?   @map("current_budget_id")
-  trialStart         DateTime? @map("trial_start")
-  subscriptionEndsAt DateTime? @map("subscription_ends_at")
-  subscriptionExempt Boolean   @default(false) @map("subscription_exempt")
-  firstBotStartAt    DateTime? @map("first_bot_start_at")
+  currentBudgetId String?   @map("current_budget_id")
+  firstBotStartAt DateTime? @map("first_bot_start_at")
   lastBotAt          DateTime? @map("last_bot_at")
   firstAppOpenAt     DateTime? @map("first_app_open_at")
   lastSeenAt         DateTime? @map("last_seen_at")
@@ -35,21 +32,9 @@ model User {
 
   categories                 Category[]
   transactions               Transaction[]
-  reminders                  Reminder[]
-  yookassaProcessedPayments  YookassaProcessedPayment[]
+  reminders Reminder[]
 
   @@map("users")
-}
-
-model YookassaProcessedPayment {
-  paymentId String   @id @map("payment_id")
-  userId    String   @map("user_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("yookassa_processed_payments")
 }
 
 model Budget {

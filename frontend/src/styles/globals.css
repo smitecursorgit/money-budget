@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap');
 
 :root {
-  /* Backgrounds — premium dark */
+  /* Backgrounds — dark */
   --bg-base:     #0a0a0a;
   --bg-surface:  rgba(255, 255, 255, 0.05);
   --bg-elevated: rgba(255, 255, 255, 0.07);

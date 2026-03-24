@@ -1,6 +1,6 @@
 # Paylo — Telegram Mini App
 
-Умный трекер доходов и расходов с голосовым вводом на базе AI.
+Умный трекер доходов и расходов с голосовым вводом на базе AI. Приложение бесплатное для пользователей.
 
 ## Стек
 
@@ -55,29 +55,13 @@ PORT=3001
 NODE_ENV=development
 ```
 
-### Подписка (ЮKassa)
-
-- Триал **72 часа** с момента первого создания пользователя (`trial_start` / `created_at`).
-- После триала без активной подписки показывается Paywall; API (кроме `/auth`, `/subscription/*`, `/health`, вебхука) отвечает **403**.
-- В личном кабинете ЮKassa укажи URL вебхука: `https://<BACKEND>/webhooks/yookassa` или `https://<BACKEND>/api/webhooks/yookassa` (оба пути ведут на один обработчик).
-- Переменные: `YOOKASSA_SHOP_ID`, `YOOKASSA_SECRET_KEY`, опционально `YOOKASSA_RETURN_URL` (редирект после оплаты).
-
-### Бесплатный бессрочный доступ (себе / тестерам)
-
-1. **Через бота (проще всего):** в `backend/.env` задай `ADMIN_TELEGRAM_IDS` — твой **числовой** Telegram id (например из @userinfobot), через запятую если несколько админов. Перезапусти бэкенд, в личке с ботом отправь `/start` — в меню команд появится `/admins` **только у тебя** (у остальных пользователей в меню останутся `/start` и `/help`).  
-   - Выдать доступ: `/admins give @username` или `/admins выдать username`  
-   - Забрать: `/admins take @username` или `/admins забрать username`  
-   У получателя должен быть **username в Telegram** и он хотя бы раз должен открыть Mini App.
-2. **API (опционально):** `POST /admin/subscription-exempt` + `X-Admin-Secret` и `ADMIN_API_SECRET`.
-3. **Только env:** `SUBSCRIPTION_EXEMPT_TELEGRAM_IDS` — без записи в БД; **перезапуск** сервера.
-
 ## Структура проекта
 
 ```
 /
 ├── frontend/              # React Mini App
 │   └── src/
-│       ├── screens/       # Dashboard, Transactions, Statistics, Reminders, Settings
+│       ├── screens/       # Welcome (онбординг), Dashboard, Transactions, …
 │       ├── components/    # VoiceButton, VoiceConfirmModal, UI-компоненты
 │       ├── api/           # Axios клиент
 │       ├── store/         # Zustand

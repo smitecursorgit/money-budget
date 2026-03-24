@@ -33,9 +33,6 @@ import categoriesRouter from './routes/categories';
 import statsRouter from './routes/stats';
 import remindersRouter from './routes/reminders';
 import settingsRouter from './routes/settings';
-import subscriptionRouter from './routes/subscription';
-import yookassaWebhooksRouter from './routes/webhooksYookassa';
-import adminRouter from './routes/admin';
 import assistantChatRouter from './routes/assistantChat';
 import { initBot, getBot } from './bot';
 import { startCronJobs } from './services/cron';
@@ -85,7 +82,7 @@ app.use(
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Accept-Language', 'X-Admin-Secret'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Accept-Language'],
   })
 );
 app.use(express.json());
@@ -122,15 +119,6 @@ const voiceLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-const adminLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 40,
-  skip: (req) => skipRateLimit(req),
-  message: { error: 'Слишком много запросов к админ-API.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 const assistantChatLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
@@ -143,7 +131,6 @@ const assistantChatLimiter = rateLimit({
 const tmpDir = path.join(process.cwd(), 'tmp');
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
 
-app.use('/admin', adminLimiter, adminRouter);
 app.use('/auth', authLimiter, authRouter);
 app.use('/budgets', budgetsRouter);
 app.use('/voice', voiceLimiter, voiceRouter);
@@ -153,9 +140,6 @@ app.use('/categories', categoriesRouter);
 app.use('/stats', statsRouter);
 app.use('/reminders', remindersRouter);
 app.use('/settings', settingsRouter);
-app.use('/subscription', subscriptionRouter);
-app.use('/webhooks/yookassa', yookassaWebhooksRouter);
-app.use('/api/webhooks/yookassa', yookassaWebhooksRouter);
 
 // Telegram webhook endpoint (used in production instead of polling)
 app.post('/webhook/telegram', express.json(), (req, res) => {
