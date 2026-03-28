@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { getTelegramWebhookSecret } from './lib/env';
 
 // Validate required env vars at startup to fail fast
 if (!process.env.JWT_SECRET) {
@@ -44,7 +45,6 @@ import assistantChatRouter from './routes/assistantChat';
 import { initBot, getBot } from './bot';
 import { startCronJobs } from './services/cron';
 import { prisma } from './lib/prisma';
-import { getTelegramWebhookSecret } from './lib/env';
 import { Prisma } from '@prisma/client';
 
 const app = express();
