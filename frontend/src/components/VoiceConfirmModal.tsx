@@ -137,7 +137,6 @@ export function VoiceConfirmModal({
                       <EntryEditCard
                         entry={entry}
                         categories={categories}
-                        fmt={fmt}
                         onSave={(updated) => { updateEntry(i, updated); setEditIndex(null); }}
                         onCancel={() => setEditIndex(null)}
                       />
@@ -278,13 +277,11 @@ function EntryViewCard({
 function EntryEditCard({
   entry,
   categories,
-  fmt: _fmt,
   onSave,
   onCancel,
 }: {
   entry: ParsedEntry;
   categories: Category[];
-  fmt: (n: number) => string;
   onSave: (updated: ParsedEntry) => void;
   onCancel: () => void;
 }) {

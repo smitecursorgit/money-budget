@@ -16,22 +16,24 @@ export function startCronJobs() {
   // Check reminders every hour
   cron.schedule('0 * * * *', async () => {
     try {
-      const now = new Date();
-      const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+      const oneHourLater = new Date(Date.now() + 60 * 60 * 1000);
 
+      // Включаем просроченные (nextDate < now) и окно до часа вперёд
       const dueReminders = await prisma.reminder.findMany({
         where: {
           isActive: true,
-          nextDate: { gte: now, lte: oneHourLater },
+          nextDate: { lte: oneHourLater },
         },
         include: { user: { select: { telegramId: true } } },
+        take: 200,
+        orderBy: { nextDate: 'asc' },
       });
 
       for (const reminder of dueReminders) {
         try {
           // Send notification first — only advance the schedule if delivery succeeded
           await sendReminderNotification(
-            Number(reminder.user.telegramId),
+            reminder.user.telegramId,
             reminder.title,
             reminder.amount ? Number(reminder.amount) : undefined
           );

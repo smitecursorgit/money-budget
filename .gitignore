@@ -2,7 +2,6 @@
 .env
 .env.local
 .env.production
-!frontend/.env.production
 
 # Dependencies
 node_modules/
@@ -12,6 +11,7 @@ node_modules/
 dist/
 */dist/
 build/
+*.tsbuildinfo
 
 # Prisma generated client
 node_modules/.prisma/

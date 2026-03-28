@@ -9,6 +9,12 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
   console.error('FATAL: TELEGRAM_BOT_TOKEN environment variable is required');
   process.exit(1);
 }
+if (process.env.NODE_ENV === 'production' && !getTelegramWebhookSecret()) {
+  console.error(
+    'FATAL: TELEGRAM_WEBHOOK_SECRET (or telegram_webhook_secret) is required in production (webhook auth)'
+  );
+  process.exit(1);
+}
 
 import express from 'express';
 import cors from 'cors';
@@ -23,6 +29,7 @@ process.on('unhandledRejection', (reason: unknown) => {
 
 process.on('uncaughtException', (err: Error) => {
   console.error('Uncaught exception:', err.message, err.stack);
+  process.exit(1);
 });
 
 import authRouter from './routes/auth';
@@ -37,6 +44,7 @@ import assistantChatRouter from './routes/assistantChat';
 import { initBot, getBot } from './bot';
 import { startCronJobs } from './services/cron';
 import { prisma } from './lib/prisma';
+import { getTelegramWebhookSecret } from './lib/env';
 import { Prisma } from '@prisma/client';
 
 const app = express();
@@ -46,22 +54,41 @@ if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
 }
 
-const ALLOWED_ORIGINS = new Set(
+function buildProductionCorsOrigins(): Set<string> {
+  const s = new Set<string>(['https://web.telegram.org', 'https://telegram.org']);
+  const mini = process.env.MINI_APP_URL?.trim();
+  if (mini) {
+    try {
+      s.add(new URL(mini).origin);
+    } catch {
+      console.warn('MINI_APP_URL is not a valid URL; CORS may block the Mini App');
+    }
+  } else if (process.env.NODE_ENV === 'production') {
+    console.warn('MINI_APP_URL is not set; only Telegram hosts are allowed by CORS');
+  }
+  const extra = process.env.CORS_EXTRA_ORIGINS;
+  if (extra) {
+    for (const part of extra.split(',')) {
+      const o = part.trim();
+      if (o) s.add(o);
+    }
+  }
+  return s;
+}
+
+const PRODUCTION_CORS_ORIGINS = buildProductionCorsOrigins();
+
+const DEV_EXTRA_ORIGINS = new Set(
   [
-    process.env.MINI_APP_URL,
-    'https://web.telegram.org',
-    'https://telegram.org',
-    process.env.NODE_ENV !== 'production' ? 'http://localhost:5173' : null,
-    process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:5173' : null,
-    process.env.NODE_ENV !== 'production' ? 'http://localhost:5174' : null,
-    process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:5174' : null,
-  ].filter(Boolean) as string[]
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:5174',
+    'http://127.0.0.1:5174',
+  ].filter(Boolean)
 );
 
 // В dev разрешаем любой порт localhost (Vite может использовать 5173, 5174 и т.д.)
 const isDev = process.env.NODE_ENV !== 'production';
-const isLocalhostOrigin = (origin: string) =>
-  /^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -70,15 +97,16 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (origin === 'null') return callback(null, true); // некоторые WebView
-      if (ALLOWED_ORIGINS.has(origin)) return callback(null, true);
-      // Dev: allow any localhost/127.0.0.1 (любой порт — Vite может использовать 5173, 5174 и т.д.)
-      if (!isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+      if (isProduction) {
+        if (PRODUCTION_CORS_ORIGINS.has(origin)) return callback(null, true);
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+        return;
+      }
+      if (DEV_EXTRA_ORIGINS.has(origin)) return callback(null, true);
+      if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
         return callback(null, origin);
       }
-      // Production: allow any HTTPS origin (Telegram Mini App can be hosted on Vercel, Netlify, etc.)
-      if (isProduction && (origin.startsWith('https://') || origin.startsWith('http://localhost'))) {
-        return callback(null, origin);
-      }
+      if (PRODUCTION_CORS_ORIGINS.has(origin)) return callback(null, true);
       callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
@@ -88,8 +116,11 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const logRequests = process.env.NODE_ENV !== 'production' || process.env.LOG_REQUESTS === '1';
 app.use((req, _res, next) => {
-  console.log(`→ ${req.method} ${req.path} [origin:${req.headers.origin || '-'}, ip:${req.ip}]`);
+  if (logRequests) {
+    console.log(`→ ${req.method} ${req.path} [origin:${req.headers.origin || '-'}, ip:${req.ip}]`);
+  }
   next();
 });
 
@@ -143,8 +174,14 @@ app.use('/settings', settingsRouter);
 
 // Telegram webhook endpoint (used in production instead of polling)
 app.post('/webhook/telegram', express.json(), (req, res) => {
-  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (webhookSecret) {
+  const webhookSecret = getTelegramWebhookSecret();
+  if (process.env.NODE_ENV === 'production') {
+    const incomingSecret = req.headers['x-telegram-bot-api-secret-token'];
+    if (!webhookSecret || incomingSecret !== webhookSecret) {
+      res.sendStatus(403);
+      return;
+    }
+  } else if (webhookSecret) {
     const incomingSecret = req.headers['x-telegram-bot-api-secret-token'];
     if (incomingSecret !== webhookSecret) {
       res.sendStatus(403);

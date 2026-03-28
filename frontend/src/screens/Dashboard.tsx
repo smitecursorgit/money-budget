@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, TrendingDown, ChevronRight, RefreshCw, Plus, X, Pencil } from 'lucide-react';
+import { TrendingUp, TrendingDown, ChevronRight, RefreshCw, Plus, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card.tsx';
 import { SkeletonPiece } from '../components/ui/SkeletonPiece.tsx';
@@ -166,7 +166,7 @@ export function Dashboard() {
       setTransactions(c.transactions, c.total ?? c.transactions.length);
       setTransactionsLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [transactions.length, setTransactions]);
 
   // Fetch fresh data in background; refetch when profile (budget) changes
   useEffect(() => {
@@ -603,7 +603,6 @@ export function Dashboard() {
           ? createPortal(
               <BalanceEditModal
                 budget={cur}
-                fmt={fmt}
                 onClose={() => setShowBalanceEdit(false)}
                 onSaved={async (initialBalance: number) => {
                   await budgetsApi.update(cur.id, { initialBalance });
@@ -650,12 +649,10 @@ function TransactionsSkeleton() {
 
 function BalanceEditModal({
   budget,
-  fmt,
   onClose,
   onSaved,
 }: {
   budget: { id: string; name: string; initialBalance: number };
-  fmt: (n: number) => string;
   onClose: () => void;
   onSaved: (initialBalance: number) => void | Promise<void>;
 }) {
@@ -953,7 +950,7 @@ function TransactionRow({
               height: 40,
               borderRadius: '999px',
               background: 'var(--bg-icon)',
-              border: '1px solid var(--border)',
+              border: `1px solid ${color}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

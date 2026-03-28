@@ -7,16 +7,7 @@ function buildUrl(): string {
   return `${url}${sep}connect_timeout=30&pool_timeout=30&socket_timeout=30`;
 }
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-
-const client =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    datasources: { db: { url: buildUrl() } },
-    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
-  });
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = client;
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function isRetryable(err: unknown): boolean {
   const msg = String((err as { message?: string })?.message ?? '');
@@ -34,24 +25,35 @@ function isRetryable(err: unknown): boolean {
   );
 }
 
-/**
- * Global Prisma middleware: auto-retry ANY query once on connection errors.
- * Protects every single Prisma call without manual wrapping.
- */
-if (!globalForPrisma.prisma) {
-  client.$use(async (params, next) => {
+function createPrismaClient(): PrismaClient {
+  const c = new PrismaClient({
+    datasources: { db: { url: buildUrl() } },
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  });
+  c.$use(async (params, next) => {
     try {
       return await next(params);
     } catch (err) {
       if (isRetryable(err)) {
         console.warn(`[prisma] ${params.model}.${params.action} ConnectorError — retrying...`);
         await new Promise((r) => setTimeout(r, 1500));
-        try { await client.$connect(); } catch { /* reconnect */ }
+        try {
+          await c.$connect();
+        } catch {
+          /* reconnect */
+        }
         return await next(params);
       }
       throw err;
     }
   });
+  return c;
+}
+
+const client = globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = client;
 }
 
 /**

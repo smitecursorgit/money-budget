@@ -9,7 +9,7 @@
 | Frontend | React + TypeScript + Vite, Framer Motion, Recharts, Lucide React |
 | Backend | Node.js + Express + TypeScript |
 | База данных | PostgreSQL + Prisma ORM |
-| AI | OpenAI Whisper (речь → текст) + GPT-4o (NLP/контекст) |
+| AI | Groq: Whisper (речь → текст) + Llama (разбор команд и чат помощника) |
 | Telegram | Telegram Mini App SDK (@twa-dev/sdk), node-telegram-bot-api |
 
 ## Быстрый старт
@@ -18,7 +18,7 @@
 - Node.js 18+
 - PostgreSQL (локально или в облаке)
 - Telegram Bot Token ([@BotFather](https://t.me/BotFather))
-- OpenAI API Key
+- Groq API Key ([console.groq.com](https://console.groq.com)) — голос и помощник
 
 ### 2. Backend
 
@@ -50,10 +50,19 @@ DATABASE_URL="postgresql://postgres.[ref]:[PASSWORD]@...pooler.supabase.com:6543
 DIRECT_URL="postgresql://postgres:[PASSWORD]@db.[ref].supabase.co:5432/postgres"
 JWT_SECRET="your-super-secret-jwt-key"
 TELEGRAM_BOT_TOKEN="your-bot-token"
+# В production обязателен (совпадает с секретом в Telegram setWebhook)
+TELEGRAM_WEBHOOK_SECRET="long-random-string"
+GROQ_API_KEY="gsk_..."
 MINI_APP_URL="https://your-domain.com"
+# Если Mini App на нескольких доменах — перечисли Origin через запятую
+# CORS_EXTRA_ORIGINS="https://preview-xxx.vercel.app"
 PORT=3001
 NODE_ENV=development
 ```
+
+**CORS (production):** разрешены `MINI_APP_URL` (origin), `https://web.telegram.org`, `https://telegram.org` и значения из `CORS_EXTRA_ORIGINS`. Любой произвольный HTTPS больше не допускается.
+
+**Логи HTTP:** в production строки запросов не пишутся; включить можно `LOG_REQUESTS=1`.
 
 ## Структура проекта
 
@@ -70,14 +79,14 @@ NODE_ENV=development
     ├── prisma/            # Схема БД
     └── src/
         ├── routes/        # auth, voice, transactions, categories, stats, reminders
-        ├── services/      # openai.ts, cron.ts
+        ├── services/      # ai.ts, cron.ts, assistantContext.ts
         ├── middleware/     # auth.ts (JWT)
         └── bot.ts         # Telegram Bot
 ```
 
 ## Голосовой ввод
 
-Пользователь говорит → Whisper → текст → GPT-4o → JSON с полями:
+Пользователь говорит → Whisper (Groq) → текст → Llama (Groq) → JSON с полями:
 
 | Поле | Описание |
 |------|---------|
@@ -103,7 +112,7 @@ NODE_ENV=development
 
 ### Frontend → Vercel / Netlify
 
-По умолчанию используется `/api` — `vercel.json` и `netlify.toml` проксируют запросы на backend. Запросы same-origin, CORS не нужен.
+По умолчанию используется `/api` — `vercel.json` и `netlify.toml` проксируют запросы на backend (в файлах указан URL Render; при смене бэкенда обнови `destination` / `to`). Запросы same-origin, CORS на фронте не нужен.
 
 ```bash
 cd frontend
@@ -122,6 +131,7 @@ node dist/index.js
 На Render в `render.yaml` уже настроены `prisma migrate deploy` в build и переменные окружения (DATABASE_URL, JWT_SECRET и т.д.).
 
 ### Если баланс и операции не загружаются
-1. **URL бэкенда** — В Render Dashboard → твой сервис → в шапке скопируй URL (например `https://<имя-сервиса>.onrender.com`). Обнови `frontend/.env.production` и пересобери фронтенд.
-2. **MINI_APP_URL** — В Render Environment задай `MINI_APP_URL` = URL, где размещён Mini App (Vercel/Netlify).
-3. **Сброс сессии** — В приложении нажми «Выйти» (при баннере ошибки), закрой Mini App и открой снова.
+1. **URL бэкенда** — В Render Dashboard → твой сервис → скопируй URL. Обнови `vercel.json` / `netlify.toml` (прокси `/api`) и при необходимости `VITE_API_URL` в сборке фронта.
+2. **MINI_APP_URL** — В Render Environment задай `MINI_APP_URL` = публичный URL Mini App (нужен и для CORS, и для кнопок бота).
+3. **TELEGRAM_WEBHOOK_SECRET** — Случайная строка в env бэкенда; бот регистрирует webhook с тем же `secret_token` (см. `.env.example`).
+4. **Сброс сессии** — В приложении нажми «Выйти» (при баннере ошибки), закрой Mini App и открой снова.

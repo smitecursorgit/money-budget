@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Bell, BellOff, Trash2, Calendar, Pencil } from 'lucide-react';
 import { Card } from '../components/ui/Card.tsx';

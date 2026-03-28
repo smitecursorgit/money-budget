@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth';
 import { prisma, withRetry } from '../lib/prisma';
 import { getBudgetId } from '../lib/budget';
+import { getCurrentPeriod } from '../lib/timezonePeriod';
 
 const router = Router();
 router.use(authMiddleware);
@@ -11,41 +12,6 @@ function parseDate(value: unknown): Date | null {
   if (!value || typeof value !== 'string') return null;
   const d = new Date(value);
   return isNaN(d.getTime()) ? null : d;
-}
-
-/** Returns the UTC offset in milliseconds for a timezone at a given point in time. */
-function getTzOffsetMs(tz: string, date: Date): number {
-  const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-  return tzDate.getTime() - utcDate.getTime();
-}
-
-/**
- * Calculates the current billing period boundaries in UTC,
- * correctly adjusted for the user's timezone.
- */
-function getCurrentPeriod(tz: string, periodStart: number): { dateFrom: Date; dateTo: Date } {
-  const now = new Date();
-  const offsetMs = getTzOffsetMs(tz, now);
-
-  // Shift `now` by the offset to get a Date whose UTC fields equal local wall-clock time
-  const localNow = new Date(now.getTime() + offsetMs);
-  const year = localNow.getUTCFullYear();
-  const month = localNow.getUTCMonth(); // 0-based
-  const day = localNow.getUTCDate();
-
-  let dateFrom: Date;
-  let dateTo: Date;
-
-  if (day >= periodStart) {
-    dateFrom = new Date(Date.UTC(year, month, periodStart) - offsetMs);
-    dateTo = new Date(Date.UTC(year, month + 1, periodStart) - offsetMs);
-  } else {
-    dateFrom = new Date(Date.UTC(year, month - 1, periodStart) - offsetMs);
-    dateTo = new Date(Date.UTC(year, month, periodStart) - offsetMs);
-  }
-
-  return { dateFrom, dateTo };
 }
 
 router.get('/summary', async (req: Request, res: Response): Promise<void> => {
@@ -195,7 +161,7 @@ router.get('/monthly', async (req: Request, res: Response): Promise<void> => {
     type Row = { month: string; type: string; total: string };
     const rowsRaw = await prisma.$queryRaw<Row[]>(
       Prisma.sql`
-        SELECT to_char(date, 'YYYY-MM') as month, type, SUM(amount::float) as total
+        SELECT to_char(date, 'YYYY-MM') as month, type, SUM(amount)::text as total
         FROM transactions
         WHERE date >= ${cutoffDate}
           AND ${budgetCondition}

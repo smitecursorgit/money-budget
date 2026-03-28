@@ -6,9 +6,23 @@ import { prisma } from '../lib/prisma';
 const router = Router();
 router.use(authMiddleware);
 
+function isValidIanaTimezone(tz: string): boolean {
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const SettingsSchema = z.object({
   currency: z.string().length(3).optional(),
-  timezone: z.string().optional(),
+  timezone: z
+    .string()
+    .optional()
+    .refine((tz) => !tz || !tz.trim() || isValidIanaTimezone(tz.trim()), {
+      message: 'Некорректная временная зона (IANA, например Europe/Moscow)',
+    }),
   periodStart: z.number().min(1).max(28).optional(),
 });
 

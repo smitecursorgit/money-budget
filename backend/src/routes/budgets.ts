@@ -34,7 +34,6 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
-    console.log('[POST /budgets] userId:', userId, 'body:', JSON.stringify(req.body));
 
     if (!req.body || typeof req.body !== 'object') {
       res.status(400).json({ error: 'Пустое тело запроса. Отправьте JSON с полем name.' });
@@ -43,7 +42,6 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
     const parse = CreateBudgetSchema.safeParse(req.body);
     if (!parse.success) {
-      console.log('[POST /budgets] validation failed:', JSON.stringify(parse.error.flatten()));
       res.status(400).json({ error: parse.error.flatten() });
       return;
     }

@@ -54,6 +54,8 @@ export function Statistics() {
   const [summary, setSummary] = useState<StatsSummary | null>(null);
   const [monthly, setMonthly] = useState<MonthlyStat[]>([]);
   const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
+  const categoryStatsRef = useRef(categoryStats);
+  const chartTabRef = useRef(chartTab);
   const cacheRef = useRef(readStatsCache());
   const [loading, setLoading] = useState(!cacheRef.current);
   const [catLoading, setCatLoading] = useState(false);
@@ -85,6 +87,11 @@ export function Statistics() {
     return { from, to };
   }, [period]);
 
+  useEffect(() => {
+    categoryStatsRef.current = categoryStats;
+    chartTabRef.current = chartTab;
+  }, [categoryStats, chartTab]);
+
   // Hydrate from cache on mount (for page reload / WebView kill)
   const hasHydrated = useRef(false);
   useLayoutEffect(() => {
@@ -114,7 +121,13 @@ export function Statistics() {
         ]);
         setSummary(sumRes.data);
         setMonthly(monRes.data);
-        writeStatsCache({ summary: sumRes.data, monthly: monRes.data, categoryStats, period, chartTab });
+        writeStatsCache({
+          summary: sumRes.data,
+          monthly: monRes.data,
+          categoryStats: categoryStatsRef.current,
+          period,
+          chartTab: chartTabRef.current,
+        });
       } catch (e) {
         const err = e as { response?: { status: number; data?: { error?: string } }; message?: string };
         if (retries > 0 && (!err.response || err.response?.status !== 401)) {
@@ -144,20 +157,19 @@ export function Statistics() {
     } finally {
       setCatLoading(false);
     }
-  }, [period, chartTab, getDateRange]);
+  }, [chartTab, getDateRange]);
 
   // Refetch when transactions change (real-time) or period changes (screens stay mounted)
   const isFirstFetch = useRef(true);
   useEffect(() => {
     const background = isFirstFetch.current && !!cacheRef.current;
     isFirstFetch.current = false;
-    loadBase(background);
-    if (chartTab !== 'bar') loadCategoryStats();
-  }, [invalidatedAt, period]); // eslint-disable-line react-hooks/exhaustive-deps
+    void loadBase(background);
+  }, [invalidatedAt, period, loadBase]);
 
   useEffect(() => {
-    if (chartTab !== 'bar') loadCategoryStats();
-  }, [chartTab]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (chartTab !== 'bar') void loadCategoryStats();
+  }, [chartTab, period, loadCategoryStats]);
 
   const periods: { label: string; value: Period }[] = [
     { label: 'Месяц', value: 'month' },

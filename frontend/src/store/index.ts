@@ -83,5 +83,5 @@ interface StatsState {
 
 export const useStatsStore = create<StatsState>((set) => ({
   invalidatedAt: 0,
-  invalidateStats: () => set((s) => ({ invalidatedAt: Date.now() })),
+  invalidateStats: () => set(() => ({ invalidatedAt: Date.now() })),
 }));

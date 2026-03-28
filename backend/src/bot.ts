@@ -1,4 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
+import { getTelegramWebhookSecret } from './lib/env';
 import { syncBotCommands, ensureOwnerCommandsForPrivateChat } from './bot/botCommands';
 import { upsertUserFromBotStart, handleStatCommand } from './bot/botStats';
 
@@ -25,8 +26,11 @@ export function initBot(): TelegramBot | null {
     // Register webhook URL automatically
     const backendUrl = process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL;
     if (backendUrl) {
-      const webhookUrl = `${backendUrl}/webhook/telegram`;
-      bot.setWebHook(webhookUrl)
+      const webhookUrl = `${backendUrl.replace(/\/$/, '')}/webhook/telegram`;
+      const secret = getTelegramWebhookSecret();
+      const hookOpts = secret ? { secret_token: secret } : {};
+      bot
+        .setWebHook(webhookUrl, hookOpts)
         .then(() => console.log(`Webhook set: ${webhookUrl}`))
         .catch((err) => console.error('Failed to set webhook:', err.message));
     } else {
@@ -97,7 +101,7 @@ export function initBot(): TelegramBot | null {
 }
 
 export async function sendReminderNotification(
-  telegramId: number,
+  telegramId: bigint | number,
   title: string,
   amount?: number
 ): Promise<void> {
@@ -106,7 +110,9 @@ export async function sendReminderNotification(
   const amountStr = amount ? ` — ${amount.toLocaleString('ru')} ₽` : '';
   const message = `🔔 *Напоминание о платеже*\n\n📋 ${title}${amountStr}\n\nНе забудь внести запись!`;
 
-  await bot.sendMessage(telegramId, message, {
+  const chatId = typeof telegramId === 'bigint' ? telegramId.toString() : String(telegramId);
+
+  await bot.sendMessage(chatId, message, {
     parse_mode: 'Markdown',
     reply_markup: {
       inline_keyboard: [

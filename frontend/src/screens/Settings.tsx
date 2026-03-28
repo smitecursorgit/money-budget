@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, ChevronRight, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, Check } from 'lucide-react';
 import { Card } from '../components/ui/Card.tsx';
 import { Button } from '../components/ui/Button.tsx';
 import { categoriesApi, settingsApi, budgetsApi } from '../api/client.ts';

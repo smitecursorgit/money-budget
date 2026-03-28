@@ -3,9 +3,18 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { prisma, withRetry } from '../lib/prisma';
 import { getBudgetId } from '../lib/budget';
+import { assertCategoryAccessible } from '../lib/categoryAccess';
 
 const router = Router();
 router.use(authMiddleware);
+
+function parseListLimitOffset(query: Request['query']): { limit: number; offset: number } {
+  const limitRaw = parseInt(String(query.limit ?? '200'), 10);
+  const offsetRaw = parseInt(String(query.offset ?? '0'), 10);
+  const limit = Number.isFinite(limitRaw) ? Math.min(500, Math.max(1, limitRaw)) : 200;
+  const offset = Number.isFinite(offsetRaw) ? Math.min(100_000, Math.max(0, offsetRaw)) : 0;
+  return { limit, offset };
+}
 
 const validDate = z.string().refine((s) => !isNaN(new Date(s).getTime()), { message: 'Invalid date' });
 
@@ -23,7 +32,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user!.userId;
     const budgetId = await getBudgetId(userId);
-    const { type, categoryId, from, to, limit = '200', offset = '0' } = req.query;
+    const { type, categoryId, from, to } = req.query;
+    const { limit, offset } = parseListLimitOffset(req.query);
 
     const where: Record<string, unknown> = budgetId
       ? { OR: [{ budgetId }, { userId, budgetId: null }] }
@@ -42,8 +52,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
         where,
         include: { category: true },
         orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
-        take: Number(limit),
-        skip: Number(offset),
+        take: limit,
+        skip: offset,
       }),
       prisma.transaction.count({ where }),
     ]);
@@ -71,6 +81,13 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     }
 
     const { amount, type, categoryId, date, note } = parse.data;
+    if (categoryId) {
+      const ok = await assertCategoryAccessible(userId, budgetId, categoryId);
+      if (!ok) {
+        res.status(400).json({ error: 'Категория не найдена или недоступна' });
+        return;
+      }
+    }
     const transaction = await prisma.transaction.create({
       data: { userId, budgetId, amount, type, categoryId, date: date ? new Date(date) : new Date(), note },
       include: { category: true },
@@ -103,6 +120,13 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
     }
 
     const data = parse.data;
+    if (data.categoryId) {
+      const ok = await assertCategoryAccessible(userId, budgetId, data.categoryId);
+      if (!ok) {
+        res.status(400).json({ error: 'Категория не найдена или недоступна' });
+        return;
+      }
+    }
     const updated = await prisma.transaction.update({
       where: { id },
       data: {
